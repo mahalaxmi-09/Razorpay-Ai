@@ -1,0 +1,320 @@
+/* Reset & Base Styles for Login Page Wrapper context */
+.login-page-wrapper {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #07111F; /* Dark Background */
+  background-image: radial-gradient(circle at center, #0D1B2A 0%, #07111F 100%); /* Dark Surface transitions */
+  color: #F8FAFC;
+}
+
+/* Container hosting both circle and card overlays */
+.login-container {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+/* Rotating circle container animation */
+.circle-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: rotate-radar 25s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes rotate-radar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rotating Radar Indicator Bars */
+.bar {
+  position: absolute;
+  width: 6px;
+  height: 24px;
+  background: rgba(0, 150, 255, 0.12); /* Subtle blue transparent */
+  border-radius: 3px;
+  top: 0;
+  left: 50%;
+  transform-origin: center 170px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Active glowing radar segment */
+.bar.active {
+  background: linear-gradient(180deg, #FFFFFF 0%, #0096FF 100%); /* Glow to bright primary blue */
+  box-shadow: 0 0 15px rgba(0, 150, 255, 0.9), 0 0 5px rgba(166, 219, 255, 0.5);
+}
+
+/* Login Box Card Wrapper */
+.login-box {
+  position: absolute;
+  z-index: 10;
+  background: rgba(13, 27, 42, 0.94); /* Dark Surface: #0D1B2A with high opacity */
+  border: 1px solid rgba(0, 150, 255, 0.15); /* Subtle glowing primary border */
+  padding: 35px;
+  border-radius: 16px;
+  width: 400px;
+  max-width: 90vw; /* Mobile responsiveness */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 150, 255, 0.05);
+  backdrop-filter: blur(12px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+/* Interactive card hover lift */
+.login-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 45px rgba(0, 150, 255, 0.15);
+}
+
+/* Brand logo inside header */
+.brand-logo-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.brand-logo-header h2 {
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  color: #FFFFFF;
+  letter-spacing: 2px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.login-tagline {
+  text-align: center;
+  color: #94A3B8; /* Muted Secondary text */
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+/* Feedback message banner styling */
+.form-feedback {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+  text-align: center;
+  line-height: 1.4;
+  border-left: 4px solid transparent;
+}
+
+.form-feedback.error-state {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left-color: #EF4444;
+  color: #FCA5A5;
+  border-top: 1px solid rgba(239, 68, 68, 0.08);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.08);
+  border-right: 1px solid rgba(239, 68, 68, 0.08);
+}
+
+.form-feedback.success-state {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-left-color: #10B981;
+  color: #A7F3D0;
+  border-top: 1px solid rgba(16, 185, 129, 0.08);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.08);
+  border-right: 1px solid rgba(16, 185, 129, 0.08);
+}
+
+/* Form Input Groups */
+.input-group {
+  position: relative;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #A6DBFF; /* Sky Blue labels */
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 11px 40px 11px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(166, 219, 255, 0.25);
+  border-radius: 20px;
+  color: #FFFFFF;
+  outline: none;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.input-group input::placeholder {
+  color: #94A3B8;
+  opacity: 0.6;
+}
+
+.input-group input:focus {
+  border-color: #0096FF;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 10px rgba(0, 150, 255, 0.2);
+}
+
+/* Invalid validations input styling */
+.input-group input.invalid-field {
+  border-color: #EF4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Input Icons */
+.input-icon {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  color: #94A3B8;
+  font-size: 0.88rem;
+  pointer-events: none;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-group input:focus + .input-icon {
+  color: #A6DBFF;
+}
+
+.password-toggle {
+  pointer-events: auto; /* clickable show/hide button */
+  cursor: pointer;
+  padding: 4px;
+  right: 12px;
+  bottom: 8px;
+}
+
+.password-toggle:hover {
+  color: #FFFFFF;
+}
+
+/* Validation message labels */
+.validation-message {
+  display: block;
+  font-size: 0.7rem;
+  color: #FCA5A5;
+  margin-top: 4px;
+  margin-left: 8px;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Forgot Password Link styling */
+.forgot-password {
+  text-align: right;
+  margin-top: -6px;
+  margin-bottom: 20px;
+}
+
+.forgot-password a {
+  color: #A6DBFF;
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-weight: 600;
+}
+
+.forgot-password a:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+/* Submit Action Button */
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(90deg, #0096FF 0%, #A6DBFF 100%); /* Primary blue to sky blue glow */
+  border: none;
+  border-radius: 20px;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 150, 255, 0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(166, 219, 255, 0.4);
+  background: #FFFFFF;
+  color: #002155;
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Card footer text */
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.login-footer p {
+  color: #94A3B8;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive screen scaling */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 24px 20px;
+    width: 320px;
+  }
+  
+  .login-container {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .bar {
+    transform-origin: center 150px !important;
+  }
+}

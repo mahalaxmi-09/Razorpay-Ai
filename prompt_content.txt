@@ -1,0 +1,1074 @@
+﻿<USER_REQUEST>
+You are building the frontend UI/UX for a professional fintech AI SaaS product called:
+
+RAZORRECOVER AI
+
+Tagline:
+"Recover revenue. Intelligently."
+
+IMPORTANT:
+This phase is ONLY for frontend UI/UX, navigation, layouts, animations, and mock/static data.
+
+DO NOT build the real payment backend.
+DO NOT connect real Razorpay APIs.
+DO NOT implement real payment processing.
+DO NOT implement real AI API calls.
+DO NOT implement real authentication yet.
+
+The goal of this phase is to create a highly polished, production-quality frontend prototype that looks ready for a real fintech company.
+
+==================================================
+1. PRODUCT PURPOSE
+==================================================
+
+RazorRecover AI is an AI-powered revenue recovery platform for merchants.
+
+The product concept:
+
+Customer payment/revenue issue
+        â†“
+Detect revenue at risk
+        â†“
+Analyze the issue
+        â†“
+AI recommends recovery action
+        â†“
+Safety guardrails
+        â†“
+Recovery/resolution action
+        â†“
+Verify outcome
+        â†“
+Notify merchant
+        â†“
+Audit trail
+
+The UI must communicate:
+- Fintech
+- Trust
+- AI intelligence
+- Revenue recovery
+- Enterprise SaaS
+- Safety
+- Transparency
+
+==================================================
+2. DESIGN LANGUAGE
+==================================================
+
+Use this exact visual direction:
+
+PRIMARY PALETTE:
+
+Bright Blue:
+#0096FF
+
+Sky Blue:
+#A6DBFF
+
+Deep Navy:
+#002155
+
+Very Light Background:
+#F5FAFF
+
+White:
+#FFFFFF
+
+Secondary Text:
+#52627A
+
+Success:
+#10B981
+
+Warning:
+#F59E0B
+
+Error:
+#EF4444
+
+Borders:
+#DCE8F5
+
+Do NOT use:
+- Purple as primary color
+- Pink
+- Neon pink
+- Random gradients
+- Excessive glassmorphism
+- Excessive dark mode
+- Excessive animations
+- Generic AI purple UI
+
+The main application should be LIGHT THEMED.
+
+Use:
+- White cards
+- Very light blue backgrounds
+- Deep navy text
+- Bright blue primary buttons
+- Sky blue highlights
+- Green only for successful recovery
+- Amber only for pending/warning
+- Red only for critical/failed states
+
+The interface should feel like:
+modern fintech + AI infrastructure + premium SaaS.
+
+==================================================
+3. TYPOGRAPHY
+==================================================
+
+Use a professional modern sans-serif font.
+
+Preferred:
+Inter
+
+Use:
+- Bold headings
+- Medium section headings
+- Regular body text
+- Clear hierarchy
+- Excellent readability
+
+Avoid decorative fonts.
+
+==================================================
+4. GLOBAL APPLICATION LAYOUT
+==================================================
+
+After login, use this structure:
+
+--------------------------------------------------
+LEFT SIDEBAR
+--------------------------------------------------
+
+Logo:
+
+â†— RazorRecover
+AI
+
+Navigation:
+
+ðŸ  Dashboard
+
+ðŸ’³ Payments
+
+ðŸ¤– Recovery Agent
+
+ðŸ“Š Analytics
+
+ðŸ”” Alerts
+
+ðŸ“‹ Audit Logs
+
+--------------------------------
+
+Bottom:
+
+âš™ï¸ Settings
+
+â“ Help & Support
+
+
+--------------------------------------------------
+TOP HEADER
+--------------------------------------------------
+
+Left:
+Current page title
+
+Right:
+
+ðŸ”” Notifications
+
+ðŸŒ Language selector
+
+ðŸ’° Currency selector
+
+ðŸ‘¤ Merchant account dropdown
+
+Example:
+
+English â–¼
+â‚¹ INR â–¼
+Mounika â–¼
+
+The account dropdown should contain:
+
+My Profile
+Account
+Preferences
+Sign Out
+
+==================================================
+5. LOGIN PAGE â€” STRICT DESIGN REQUIREMENT
+==================================================
+
+VERY IMPORTANT:
+
+Use the following login design as the BASE DESIGN.
+
+DO NOT replace it with a normal modern SaaS login page.
+
+DO NOT create a generic centered white login card.
+
+DO NOT remove the animated glowing rotating border.
+
+DO NOT remove the hover expansion behavior.
+
+DO NOT remove the layered border animation.
+
+DO NOT remove the glowing effect.
+
+DO NOT remove the circular rotating conic-gradient animation.
+
+Preserve the EXACT structural concept of:
+
+.box
+.login
+.loginBx
+@property --a
+repeating-conic-gradient
+rotating animation
+.box:hover
+.loginBx transform animation
+
+The original design uses:
+- rotating animated border
+- glowing outer ring
+- compact card that expands on hover
+- login content initially positioned lower
+- content slides into position on hover
+- glowing button
+- animated neon border
+
+Keep that behavior.
+
+BUT adapt its COLORS to RazorRecover AI.
+
+Replace:
+
+#ff2770
+with:
+#0096FF
+
+Replace:
+
+#45f3ff
+with:
+#A6DBFF or #0096FF
+
+Replace:
+#252432
+with:
+#002155
+
+Replace:
+#2d2d39
+with:
+#071A33
+
+Replace:
+#25252b
+with:
+#002155
+
+Keep the same animation concept.
+
+==================================================
+6. LOGIN PAGE CONTENT
+==================================================
+
+Brand:
+
+â†— RazorRecover AI
+
+Heading:
+
+Welcome back
+
+Subheading:
+
+Recover revenue. Intelligently.
+
+Fields:
+
+Email
+Password
+
+Button:
+
+Sign In
+
+Below:
+
+Forgot password?
+
+Don't have an account?
+Sign up
+
+Add a small:
+
+AI-powered revenue recovery platform
+
+Do NOT use:
+- heart icon
+- random decorative icons
+- pink colors
+
+Instead use a simple:
+â†— recovery arrow / AI icon
+
+Font Awesome can be used if already available, otherwise use Lucide icons.
+
+==================================================
+7. SIGN UP PAGE
+==================================================
+
+Create a signup page using the SAME visual language as Login.
+
+Do not copy a generic registration template.
+
+Fields:
+
+Full Name
+Business / Merchant Name
+Email
+Password
+Confirm Password
+
+Button:
+
+Create Account
+
+Below:
+
+Already have an account?
+Sign in
+
+Use the same animated glowing border concept.
+
+The Login and Signup pages must feel like the same product.
+
+==================================================
+8. DASHBOARD
+==================================================
+
+Create the main merchant dashboard.
+
+Header:
+
+Good morning, Mounika ðŸ‘‹
+
+Subtitle:
+
+Here's your revenue recovery overview.
+
+Top KPI cards:
+
+1. Revenue at Risk
+â‚¹10,25,000
+
+2. Recovered Revenue
+â‚¹6,80,000
+
+3. Active Cases
+124
+
+4. Recovery Rate
+66.3%
+
+Use mock data only.
+
+Cards should be clean white cards with subtle borders and shadows.
+
+Recovered Revenue should use a subtle green accent.
+
+Revenue at Risk should use blue.
+
+Active Cases should use navy.
+
+Recovery Rate should use blue/green.
+
+==================================================
+9. DASHBOARD CHART
+==================================================
+
+Create a professional line/area chart:
+
+Title:
+Revenue Recovery
+
+Tabs:
+
+7 Days
+30 Days
+90 Days
+
+Show:
+
+Revenue at Risk
+Revenue Recovered
+
+Use the RazorRecover blue palette.
+
+Do NOT use random rainbow colors.
+
+==================================================
+10. AI ACTIVITY SECTION
+==================================================
+
+Create a card:
+
+AI Recovery Activity
+
+Example entries:
+
+ðŸŸ¢ â‚¹5,000 recovered
+Settlement successfully processed
+2 min ago
+
+ðŸŸ¡ â‚¹8,000 monitoring
+Settlement verification in progress
+5 min ago
+
+ðŸ”´ â‚¹12,000 escalated
+Recovery limit reached
+12 min ago
+
+Each item should have:
+- status indicator
+- amount
+- short explanation
+- timestamp
+
+==================================================
+11. PRIORITY CASES
+==================================================
+
+Create a:
+
+Priority Cases
+
+section.
+
+Example:
+
+HIGH PRIORITY
+
+â‚¹45,000
+Customer debited
+Merchant settlement missing
+
+AI Confidence:
+94%
+
+Button:
+
+Investigate
+
+Other cases:
+
+â‚¹18,000
+Settlement pending
+
+â‚¹7,500
+Payment recovery required
+
+Clicking a case should navigate to the relevant payment detail UI.
+
+==================================================
+12. AI INSIGHTS
+==================================================
+
+Create an AI Insights card.
+
+Example:
+
+AI Insight
+
+"Settlement-related revenue risk increased by 18% today. 73 transactions may require merchant attention."
+
+Button:
+
+View affected transactions
+
+Use a subtle blue AI indicator.
+
+==================================================
+13. AI COPILOT
+==================================================
+
+Add an AI Copilot interface.
+
+IMPORTANT:
+
+This is ONLY UI in this phase.
+
+No real AI connection.
+
+Place a floating button at bottom-right:
+
+âœ¦ AI Copilot
+
+When clicked, open a right-side panel.
+
+Panel title:
+
+RazorRecover Copilot
+
+Subtitle:
+
+Your AI revenue recovery assistant
+
+Example suggested questions:
+
+"Why is my revenue at risk?"
+
+"Show today's recoveries"
+
+"Which cases need attention?"
+
+"What caused today's payment issues?"
+
+"What can I recover this week?"
+
+Input:
+
+Ask RazorRecover...
+
+Button:
+Send
+
+Use mock responses.
+
+Example mock response:
+
+"â‚¹6.8L has been recovered today across 412 cases. 18 high-priority cases still require attention."
+
+The Copilot must visually feel integrated into the product.
+
+==================================================
+14. PAYMENTS PAGE
+==================================================
+
+Create Payments page.
+
+Tabs:
+
+All
+At Risk
+Failed
+Settlement Issues
+
+Table columns:
+
+Payment ID
+Customer
+Amount
+Status
+Risk
+AI Recommendation
+Action
+
+Example:
+
+TXN_10234
+Rahul Sharma
+â‚¹5,000
+Settlement Pending
+High
+Verify Settlement
+View
+
+TXN_10235
+Ananya
+â‚¹2,500
+Recovered
+Low
+No Action
+View
+
+Clicking View opens a detailed payment page or drawer.
+
+==================================================
+15. PAYMENT DETAIL PAGE
+==================================================
+
+Show:
+
+Transaction ID
+Customer
+Amount
+Currency
+Payment Status
+Customer Debited
+Merchant Settlement
+Risk Level
+AI Confidence
+
+Section:
+
+AI Analysis
+
+Example:
+
+Issue:
+Customer payment captured but merchant settlement is pending.
+
+Recovery Probability:
+91%
+
+Recommended Action:
+Verify Settlement
+
+Why:
+Payment is already captured. Retrying the payment could create a duplicate charge risk.
+
+Add:
+
+View Audit Trail
+
+Button:
+
+View Recovery Action
+
+==================================================
+16. RECOVERY AGENT PAGE
+==================================================
+
+Create:
+
+Recovery Agent
+
+Show:
+
+Active Recoveries
+Pending Actions
+Completed
+Escalated
+
+Add an AI workflow visualization:
+
+Detect
+â†“
+Analyze
+â†“
+Decide
+â†“
+Guardrail
+â†“
+Recover
+â†“
+Verify
+
+Each stage should have a clean visual state.
+
+==================================================
+17. ANALYTICS PAGE
+==================================================
+
+Create:
+
+Revenue Recovery Analytics
+
+KPI cards:
+
+Total Revenue at Risk
+Total Recovered
+Recovery Rate
+Average Recovery Time
+
+Charts:
+
+Recovery Trend
+Failure Reasons
+Recovery Outcomes
+
+Add:
+
+What-if Recovery Simulator
+
+UI example:
+
+"What if we retry eligible payments within 24 hours?"
+
+Mock output:
+
+Eligible Transactions:
+326
+
+Revenue at Risk:
+â‚¹4,20,000
+
+Expected Recovery:
+â‚¹2,90,000 â€“ â‚¹3,40,000
+
+Recommended Window:
+24â€“48 hours
+
+==================================================
+18. ALERTS PAGE
+==================================================
+
+Create:
+
+Alerts
+
+Filters:
+
+All
+Critical
+Warning
+Success
+
+Examples:
+
+ðŸ”´ â‚¹45,000 revenue at risk
+Immediate review recommended
+
+ðŸŸ¡ â‚¹18,000 settlement pending
+Monitoring active
+
+ðŸŸ¢ â‚¹12,500 recovered
+Recovery completed successfully
+
+==================================================
+19. AUDIT LOGS
+==================================================
+
+Create professional audit log page.
+
+Columns:
+
+Timestamp
+Transaction
+AI Decision
+Reason
+Guardrail
+Action
+Outcome
+
+Example:
+
+10:34 AM
+TXN_10234
+VERIFY_SETTLEMENT
+Payment captured, settlement pending
+PASSED
+Settlement Verification
+Processed
+
+Include filters and search.
+
+==================================================
+20. SETTINGS
+==================================================
+
+Create settings page.
+
+Sections:
+
+Account
+Notifications
+AI Preferences
+Recovery Guardrails
+Language
+Currency
+Security
+
+Recovery Guardrails UI:
+
+Maximum Retry Attempts
+24-hour cooldown
+Maximum Transaction Amount
+Duplicate Payment Protection
+Human Approval Threshold
+
+Use toggles/sliders/inputs.
+
+These are ONLY UI controls for now.
+
+==================================================
+21. LANGUAGE
+==================================================
+
+Add language selector.
+
+Languages:
+
+English
+à°¤à±†à°²à±à°—à±
+à¤¹à¤¿à¤‚à¤¦à¥€
+
+For this phase, UI can use mock translations.
+
+Make sure the architecture is ready for future i18n integration.
+
+==================================================
+22. CURRENCY
+==================================================
+
+Add currency selector.
+
+Currencies:
+
+â‚¹ INR
+$ USD
+â‚¬ EUR
+Â£ GBP
+
+For this phase, use mock/static converted values.
+
+DO NOT use fake live exchange rates.
+
+==================================================
+23. RESPONSIVENESS
+==================================================
+
+Must be fully responsive.
+
+Desktop:
+Sidebar + content
+
+Tablet:
+Collapsible sidebar
+
+Mobile:
+Bottom navigation or hamburger menu
+
+Tables should become horizontally scrollable or card-based on mobile.
+
+Login and signup must work beautifully on:
+- Desktop
+- Tablet
+- Mobile
+
+==================================================
+24. ANIMATIONS
+==================================================
+
+Use professional subtle animations.
+
+Allowed:
+- fade
+- slide
+- hover
+- card lift
+- button transitions
+- sidebar transitions
+- chart animations
+- AI Copilot panel slide-in
+- Login glowing rotating border
+
+Avoid:
+- excessive bouncing
+- excessive spinning
+- distracting effects
+- animations on every element
+
+The login animation can remain visually strong because it is the brand entrance.
+
+==================================================
+25. ICONS
+==================================================
+
+Use Lucide icons or Font Awesome.
+
+Use consistent icon style.
+
+Suggested:
+
+Dashboard â†’ LayoutDashboard
+Payments â†’ CreditCard
+Recovery Agent â†’ Bot
+Analytics â†’ ChartNoAxesCombined
+Alerts â†’ Bell
+Audit â†’ ClipboardList
+Settings â†’ Settings
+Help â†’ CircleHelp
+Account â†’ User
+AI â†’ Sparkles
+
+==================================================
+26. COMPONENT ARCHITECTURE
+==================================================
+
+Create reusable components.
+
+Example:
+
+components/
+    Sidebar
+    Header
+    KPIcard
+    RecoveryChart
+    AIActivity
+    PriorityCases
+    AIInsight
+    Copilot
+    StatusBadge
+    PaymentTable
+    AuditTable
+    NotificationPanel
+    AccountMenu
+    LanguageSelector
+    CurrencySelector
+
+Use reusable components instead of duplicating UI.
+
+==================================================
+27. ROUTING
+==================================================
+
+Create these routes:
+
+/login
+/signup
+
+/dashboard
+/payments
+/payments/:id
+
+/recovery
+/analytics
+/alerts
+/audit
+
+/settings
+/help
+
+Use proper navigation.
+
+All sidebar items must work.
+
+Buttons must not be dead.
+
+If functionality is not implemented yet, show a realistic UI state instead of broken links.
+
+==================================================
+28. MOCK DATA
+==================================================
+
+Create centralized mock data.
+
+Do NOT hardcode the same values across many components.
+
+Example:
+
+mockTransactions
+mockRecoveryCases
+mockAuditLogs
+mockNotifications
+mockAIInsights
+mockAnalytics
+
+This will make it easy to replace mock data with APIs later.
+
+==================================================
+29. FUTURE BACKEND READINESS
+==================================================
+
+Structure frontend so later we can connect:
+
+Razorpay Test APIs
+Razorpay Webhooks
+Backend API
+PostgreSQL
+OpenAI API
+Recovery Engine
+Guardrails
+
+DO NOT implement those now.
+
+Use a clean service layer so mock data can later be replaced by real API calls.
+
+==================================================
+30. FINAL QUALITY REQUIREMENT
+==================================================
+
+The final frontend should look like a real fintech startup product.
+
+It should NOT look like:
+- a college project
+- a generic dashboard template
+- a random AI chatbot
+- a Dribbble-only mockup
+- an over-designed neon AI website
+
+It should feel like:
+
+"An enterprise-grade AI revenue recovery platform."
+
+Use:
+- strong spacing
+- consistent typography
+- clear hierarchy
+- excellent empty states
+- loading states
+- hover states
+- error states
+- success states
+- responsive design
+- accessible contrast
+- keyboard-friendly controls
+
+==================================================
+31. IMPORTANT FINAL RULE
+==================================================
+
+DO NOT change the product concept.
+
+DO NOT add random features.
+
+DO NOT add unrelated pages.
+
+DO NOT replace the specified login animation with another design.
+
+DO NOT use purple/pink as the primary brand color.
+
+DO NOT connect real payment processing in this phase.
+
+Build the frontend foundation cleanly so the backend, AI, Razorpay test APIs, guardrails, and recovery engine can be connected later.
+
+Before finishing, verify:
+
+1. Login page works
+2. Signup page works
+3. Login animation works
+4. Sidebar navigation works
+5. Dashboard renders correctly
+6. Payments page works
+7. Payment detail works
+8. Recovery Agent page works
+9. Analytics works
+10. Alerts works
+11. Audit Logs works
+12. Settings works
+13. AI Copilot opens/closes correctly
+14. Language selector works visually
+15. Currency selector works visually
+16. Account dropdown works
+17. Responsive layout works
+18. No broken routes
+19. No console errors
+20. No placeholder lorem ipsum
+21. No broken images
+22. No dead buttons where a realistic interaction can be implemented
+
+After completing the UI, provide a concise summary of:
+- pages created
+- components created
+- navigation created
+- login/signup implementation
+- mock data structure
+- responsive behavior
+- anything intentionally left for backend phase 
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-08-30T01:16:40+05:30.
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.5 Flash (Medium). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

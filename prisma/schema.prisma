@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  merchants Merchant[]
+}
+
+model Merchant {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  email           String
+  defaultCurrency String   @default("INR")
+  defaultLanguage String   @default("English")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                 String   @id // e.g. TXN_10234
+  externalPaymentId  String?  // Razorpay payment ID (e.g. pay_123)
+  externalOrderId    String?  // Razorpay order ID
+  customerId         String
+  merchantId         String
+  amount             Int      // Mapped in smallest currency unit (e.g. paise for INR)
+  currency           String   @default("INR")
+  status             String   // CAPTURED, FAILED, etc.
+  method             String?  // card, upi, netbanking
+  capturedAt         DateTime?
+  failureReason      String?
+  settlementStatus   String?  // PENDING, SETTLED
+  rawEventReference  String?  // JSON string of webhook payload
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  customer           Customer @relation(fields: [customerId], references: [id])
+}
+
+model RevenueRiskEvent {
+  id            String   @id @default(uuid())
+  transactionId String
+  merchantId    String
+  riskType      String   // PAYMENT_FAILED, SETTLEMENT_PENDING, CUSTOMER_DEBIT_MERCHANT_NOT_SETTLED, etc.
+  riskLevel     String   // High, Medium, Low
+  amountAtRisk  Int
+  reason        String
+  status        String   // OPEN, RESOLVED
+  detectedAt    DateTime @default(now())
+  resolvedAt    DateTime?
+}
+
+model RecoveryCase {
+  id                String   @id @default(uuid())
+  riskEventId       String
+  transactionId     String
+  status            String   // OPEN, MONITORING, RECOVERED, ESCALATED, STOPPED
+  recommendedAction String
+  priority          String   // High, Medium, Low
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AIDecision {
+  id                String   @id @default(uuid())
+  recoveryCaseId    String
+  issue             String
+  riskLevel         String
+  confidence        String
+  recommendedAction String
+  reason            String
+  createdAt         DateTime @default(now())
+}
+
+model RecoveryAction {
+  id              String   @id @default(uuid())
+  recoveryCaseId  String
+  actionType      String   // VERIFY_SETTLEMENT, RETRY_PAYMENT, SEND_REMINDER, SCHEDULE_RETRY, ESCALATE, STOP
+  status          String   // PENDING, SUCCESS, FAILED
+  guardrailResult String
+  executedAt      DateTime @default(now())
+  completedAt     DateTime?
+  result          String?
+  createdAt       DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  merchantId  String
+  type        String   // RECOVERY_SUCCESS, RECOVERY_PENDING, ACTION_REQUIRED, SYSTEM_ALERT, AI_INSIGHT
+  title       String
+  message     String
+  severity    String   // info, success, warning, error
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  merchantId     String
+  transactionId  String?
+  recoveryCaseId String?
+  eventType      String   // PAYMENT_RECEIVED, RISK_DETECTED, AI_ANALYSIS, GUARDRAIL_CHECK, RECOVERY_ACTION, RECOVERY_RESULT, NOTIFICATION_SENT
+  actor          String   // SYSTEM, MERCHANT, AI
+  description    String
+  metadata       String?  // JSON string
+  createdAt      DateTime @default(now())
+}
+
+model WebhookEvent {
+  id              String   @id @default(uuid())
+  externalEventId String   @unique // Razorpay event ID (e.g. evt_123)
+  eventType       String   // payment.captured, payment.failed
+  payloadHash     String
+  receivedAt      DateTime @default(now())
+  processedAt     DateTime?
+  status          String   // RECEIVED, PROCESSED, ERROR
+}
