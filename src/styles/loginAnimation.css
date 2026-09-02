@@ -1,20 +1,27 @@
 /* Reset & Base Styles for Login Page Wrapper context */
 :root {
-  --radar-radius: 380px;
-  --radar-radius-signup: 400px;
+  --radar-radius: 430px;
+  --radar-radius-signup: 450px;
 }
 
-@media (max-height: 900px), (max-width: 950px) {
+@media (max-height: 950px), (max-width: 1000px) {
   :root {
-    --radar-radius: 340px;
-    --radar-radius-signup: 360px;
+    --radar-radius: 370px;
+    --radar-radius-signup: 390px;
   }
 }
 
-@media (max-height: 750px), (max-width: 700px) {
+@media (max-height: 800px), (max-width: 750px) {
   :root {
-    --radar-radius: 290px;
-    --radar-radius-signup: 310px;
+    --radar-radius: 310px;
+    --radar-radius-signup: 330px;
+  }
+}
+
+@media (max-height: 650px), (max-width: 550px) {
+  :root {
+    --radar-radius: 270px;
+    --radar-radius-signup: 280px;
   }
 }
 
@@ -45,7 +52,7 @@
   z-index: 10;
 }
 
-/* Circle container surrounding the card */
+/* Big Circle container surrounding the card */
 .circle-container {
   position: absolute;
   top: 50%;
@@ -59,13 +66,14 @@
   z-index: 1;
 }
 
-/* Vertically / Radially Oriented Rupee (₹) Radar Symbols */
+/* Clearly Visible Big Vertically / Radially Oriented Rupee (₹) Radar Symbols */
 .rupee-tick {
   position: absolute;
-  font-size: 21px;
+  font-size: 26px;
   font-weight: 900;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: rgba(0, 150, 255, 0.12); /* Subtle transparent blue */
+  color: rgba(0, 150, 255, 0.35); /* Crisp, clearly visible blue outline */
+  text-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
   transform-origin: center center;
   transition: opacity 0.08s ease, transform 0.08s ease, filter 0.08s ease, color 0.08s ease;
   user-select: none;
@@ -74,66 +82,75 @@
   line-height: 1;
 }
 
-/* Multi-tier Glowing Light Sweep Trail (Cyan core to White-hot tip) */
+/* Multi-tier Glowing Light Sweep Trail (Intense Neon Cyan core to White-hot tip) */
 .rupee-tick.trail-0 {
-  background: linear-gradient(180deg, #FFFFFF 0%, #38BDF8 45%, #0096FF 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #38BDF8 40%, #0096FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(0, 150, 255, 1)) drop-shadow(0 0 24px rgba(0, 150, 255, 0.85)) drop-shadow(0 0 4px #FFFFFF);
-  transform: scale(1.35) !important;
+  filter: drop-shadow(0 0 12px rgba(0, 150, 255, 1)) drop-shadow(0 0 30px rgba(0, 150, 255, 0.95)) drop-shadow(0 0 6px #FFFFFF);
+  transform: scale(1.4) !important;
   opacity: 1;
 }
 
 .rupee-tick.trail-1 {
-  background: linear-gradient(180deg, #FFFFFF 10%, #0096FF 100%);
+  background: linear-gradient(180deg, #FFFFFF 5%, #38BDF8 50%, #0096FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(0, 150, 255, 0.95)) drop-shadow(0 0 18px rgba(0, 150, 255, 0.7));
-  transform: scale(1.28) !important;
-  opacity: 0.95;
+  filter: drop-shadow(0 0 10px rgba(0, 150, 255, 0.95)) drop-shadow(0 0 24px rgba(0, 150, 255, 0.85)) drop-shadow(0 0 4px #FFFFFF);
+  transform: scale(1.34) !important;
+  opacity: 0.98;
 }
 
 .rupee-tick.trail-2 {
-  background: linear-gradient(180deg, #F0F9FF 15%, #0096FF 100%);
+  background: linear-gradient(180deg, #F0F9FF 10%, #0096FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 7px rgba(0, 150, 255, 0.85)) drop-shadow(0 0 14px rgba(0, 150, 255, 0.6));
-  transform: scale(1.22) !important;
-  opacity: 0.85;
+  filter: drop-shadow(0 0 9px rgba(0, 150, 255, 0.9)) drop-shadow(0 0 18px rgba(0, 150, 255, 0.75));
+  transform: scale(1.28) !important;
+  opacity: 0.92;
 }
 
 .rupee-tick.trail-3 {
-  background: linear-gradient(180deg, #E0F2FE 20%, #0284C7 100%);
+  background: linear-gradient(180deg, #E0F2FE 15%, #0096FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 6px rgba(0, 150, 255, 0.75)) drop-shadow(0 0 10px rgba(0, 150, 255, 0.5));
-  transform: scale(1.16) !important;
-  opacity: 0.72;
+  filter: drop-shadow(0 0 8px rgba(0, 150, 255, 0.85)) drop-shadow(0 0 14px rgba(0, 150, 255, 0.65));
+  transform: scale(1.22) !important;
+  opacity: 0.84;
 }
 
 .rupee-tick.trail-4 {
-  color: #38BDF8;
-  filter: drop-shadow(0 0 5px rgba(0, 150, 255, 0.6));
-  transform: scale(1.1) !important;
-  opacity: 0.58;
+  background: linear-gradient(180deg, #BAE6FD 20%, #0284C7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 7px rgba(0, 150, 255, 0.75));
+  transform: scale(1.16) !important;
+  opacity: 0.74;
 }
 
 .rupee-tick.trail-5 {
-  color: #0284C7;
-  filter: drop-shadow(0 0 4px rgba(0, 150, 255, 0.45));
-  transform: scale(1.05) !important;
-  opacity: 0.42;
+  color: #38BDF8;
+  filter: drop-shadow(0 0 6px rgba(0, 150, 255, 0.65));
+  transform: scale(1.1) !important;
+  opacity: 0.65;
 }
 
 .rupee-tick.trail-6 {
-  color: #0369A1;
-  filter: drop-shadow(0 0 3px rgba(0, 150, 255, 0.3));
-  opacity: 0.3;
+  color: #0284C7;
+  filter: drop-shadow(0 0 5px rgba(0, 150, 255, 0.5));
+  transform: scale(1.05) !important;
+  opacity: 0.52;
 }
 
 .rupee-tick.trail-7 {
-  color: rgba(0, 150, 255, 0.22);
-  opacity: 0.2;
+  color: #0369A1;
+  filter: drop-shadow(0 0 4px rgba(0, 150, 255, 0.4));
+  opacity: 0.42;
+}
+
+.rupee-tick.trail-8 {
+  color: rgba(0, 150, 255, 0.38);
+  opacity: 0.35;
 }
 
 /* Login Box Card Wrapper (Sitting completely inside the big circle) */

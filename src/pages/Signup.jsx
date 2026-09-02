@@ -18,7 +18,7 @@ export default function Signup({ onLogin, onNavigate }) {
 
   // Rotating circle active indicator index
   const [activeBar, setActiveBar] = useState(0);
-  const numBars = 48;
+  const numBars = 52;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -29,7 +29,7 @@ export default function Signup({ onLogin, onNavigate }) {
 
   const getTrailClass = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    if (diff >= 0 && diff < 8) {
+    if (diff >= 0 && diff < 9) {
       return `trail-${diff}`;
     }
     return '';
