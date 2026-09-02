@@ -24,7 +24,7 @@ import { api } from './lib/api';
 export default function App() {
   // Global States
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [merchantName, setMerchantName] = useState('Mounika');
+  const [merchantName, setMerchantName] = useState(() => localStorage.getItem('merchantName') || 'Mounika');
   const [lang, setLang] = useState('English');
   const [currency, setCurrency] = useState('INR');
   const [notifications, setNotifications] = useState([]);
@@ -113,7 +113,9 @@ export default function App() {
   };
 
   const handleLogin = (user) => {
-    setMerchantName(user || 'Mounika');
+    const validName = user && typeof user === 'string' && user.trim() ? user.trim() : 'Mounika';
+    setMerchantName(validName);
+    localStorage.setItem('merchantName', validName);
     setIsAuthenticated(true);
     handleNavigate('#/dashboard');
   };

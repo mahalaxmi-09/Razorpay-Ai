@@ -79,7 +79,12 @@ export default function Login({ onLogin, onNavigate }) {
       
       setTimeout(() => {
         setIsSubmitting(false);
-        onLogin(email.split('@')[0]); // authenticate user segment
+        const namePart = email.split('@')[0] || 'User';
+        const formattedName = namePart
+          .split(/[\._\-]/)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+        onLogin(formattedName);
       }, 800);
     }, 1000);
   };
