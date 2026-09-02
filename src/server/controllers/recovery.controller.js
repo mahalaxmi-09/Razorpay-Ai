@@ -1,6 +1,11 @@
 import { prisma } from '../config/db.js';
 import { aiService } from '../services/ai.service.js';
-import { recoverySimulatorService } from '../services/recoverySimulator.service.js';
+import { recoveryExecutionService } from '../services/recoveryExecution.service.js';
+import { recoveryStateMachineService } from '../services/recoveryStateMachine.service.js';
+
+/**
+ * Recovery Controller (Phase 6 Autonomous Recovery Agent)
+ */
 
 export const recoveryController = {
   // 1. List Recovery Cases
@@ -47,7 +52,8 @@ export const recoveryController = {
           transaction: { include: { customer: true } },
           riskEvent: true,
           aiDecisions: { orderBy: { createdAt: 'desc' } },
-          recoveryActions: { orderBy: { createdAt: 'desc' } }
+          recoveryActions: { orderBy: { createdAt: 'desc' } },
+          auditLogs: { orderBy: { createdAt: 'desc' } }
         }
       });
 
@@ -71,7 +77,7 @@ export const recoveryController = {
     }
   },
 
-  // 3. Analyze Case (OpenAI + Rules Engine Fallback)
+  // 3. Analyze Case (AI Decision + Structured Validation)
   analyzeCase: async (req, res) => {
     try {
       const { id } = req.params;
@@ -84,6 +90,14 @@ export const recoveryController = {
         return res.status(404).json({
           success: false,
           error: { code: 'NOT_FOUND', message: `Recovery case ${id} not found.` }
+        });
+      }
+
+      // Transition to ANALYZING state
+      if (recoveryCase.status === 'OPEN') {
+        await recoveryStateMachineService.transitionCase(id, 'ANALYZING', {
+          actor: 'AI',
+          reason: 'AI revenue recovery analysis started.'
         });
       }
 
@@ -100,6 +114,18 @@ export const recoveryController = {
 
       const result = await aiService.analyzeRevenueRisk(recoveryCase.transaction, recoveryCase.id);
 
+      // Transition to ACTION_RECOMMENDED or AWAITING_APPROVAL based on decision
+      const aiDecision = result.data;
+      let nextStatus = 'ACTION_RECOMMENDED';
+      if (aiDecision.should_escalate) nextStatus = 'ESCALATED';
+      else if (aiDecision.stop_recovery) nextStatus = 'STOPPED';
+
+      await recoveryStateMachineService.transitionCase(id, nextStatus, {
+        actor: 'AI',
+        reason: `AI Recommended: ${aiDecision.recommended_action} (Confidence: ${(aiDecision.confidence * 100).toFixed(0)}%)`,
+        actionType: aiDecision.recommended_action
+      });
+
       return res.json({
         success: true,
         data: result.data,
@@ -115,79 +141,126 @@ export const recoveryController = {
     }
   },
 
-  // 4. Simulate Recovery Action
-  simulateAction: async (req, res) => {
+  // 4. Approve Case (Merchant/Admin approval)
+  approveCase: async (req, res) => {
     try {
       const { id } = req.params;
-      const { actionType } = req.body;
+      const { approvedBy, reason } = req.body;
 
-      const result = await recoverySimulatorService.simulateRecovery(id, actionType);
-
-      if (!result.success) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'GUARDRAIL_BLOCKED', message: result.reason }
-        });
-      }
+      const result = await recoveryExecutionService.approveCase(id, approvedBy || 'MERCHANT', reason);
 
       return res.json({
         success: true,
         data: result
       });
     } catch (error) {
-      console.error('recoveryController.simulateAction error:', error.message);
-      return res.status(500).json({
+      console.error('recoveryController.approveCase error:', error.message);
+      return res.status(400).json({
         success: false,
-        error: { code: 'SIMULATION_ERROR', message: error.message }
+        error: { code: 'APPROVAL_ERROR', message: error.message }
       });
     }
   },
 
-  // 5. Escalate Case to Human Queue
+  // 5. Reject Case (Merchant rejection -> STOPPED)
+  rejectCase: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rejectedBy, reason } = req.body;
+
+      const result = await recoveryExecutionService.rejectCase(id, rejectedBy || 'MERCHANT', reason);
+
+      return res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('recoveryController.rejectCase error:', error.message);
+      return res.status(400).json({
+        success: false,
+        error: { code: 'REJECTION_ERROR', message: error.message }
+      });
+    }
+  },
+
+  // 6. Execute Recovery Action
+  executeAction: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { actionType, idempotencyKey } = req.body;
+
+      const result = await recoveryExecutionService.executeCaseRecovery({
+        recoveryCaseId: id,
+        actionType,
+        actor: 'MERCHANT',
+        idempotencyKey
+      });
+
+      return res.json({
+        success: result.success,
+        data: result
+      });
+    } catch (error) {
+      console.error('recoveryController.executeAction error:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'EXECUTION_ERROR', message: error.message }
+      });
+    }
+  },
+
+  // 7. Verify Recovery Outcome
+  verifyCase: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await recoveryExecutionService.executeCaseRecovery({
+        recoveryCaseId: id,
+        actionType: 'VERIFY_PAYMENT',
+        actor: 'SYSTEM'
+      });
+
+      return res.json({
+        success: result.success,
+        data: result
+      });
+    } catch (error) {
+      console.error('recoveryController.verifyCase error:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'VERIFICATION_ERROR', message: error.message }
+      });
+    }
+  },
+
+  // 8. Escalate Case to Human Queue
   escalateCase: async (req, res) => {
     try {
       const { id } = req.params;
-      const updatedCase = await prisma.recoveryCase.update({
-        where: { id },
-        data: { status: 'ESCALATED', priority: 'High' }
+      const { reason } = req.body;
+
+      const result = await recoveryStateMachineService.transitionCase(id, 'ESCALATED', {
+        actor: 'MERCHANT',
+        reason: reason || 'Case escalated for merchant compliance review.'
       });
 
-      await prisma.auditLog.create({
-        data: {
-          merchantId: 'SYSTEM',
-          recoveryCaseId: id,
-          eventType: 'RECOVERY_ESCALATED',
-          actor: 'MERCHANT',
-          description: `Recovery case ${id} escalated for human compliance review.`
-        }
-      });
-
-      return res.json({ success: true, data: updatedCase });
+      return res.json({ success: true, data: result.updatedCase });
     } catch (error) {
       return res.status(500).json({ success: false, error: { message: error.message } });
     }
   },
 
-  // 6. Stop Case Recovery
+  // 9. Stop Case Recovery
   stopCase: async (req, res) => {
     try {
       const { id } = req.params;
-      const updatedCase = await prisma.recoveryCase.update({
-        where: { id },
-        data: { status: 'STOPPED' }
+      const { reason } = req.body;
+
+      const result = await recoveryStateMachineService.transitionCase(id, 'STOPPED', {
+        actor: 'MERCHANT',
+        reason: reason || 'Case permanently halted by merchant.'
       });
 
-      await prisma.auditLog.create({
-        data: {
-          merchantId: 'SYSTEM',
-          recoveryCaseId: id,
-          eventType: 'RECOVERY_STOPPED',
-          actor: 'MERCHANT',
-          description: `Recovery case ${id} permanently halted.`
-        }
-      });
-
-      return res.json({ success: true, data: updatedCase });
+      return res.json({ success: true, data: result.updatedCase });
     } catch (error) {
       return res.status(500).json({ success: false, error: { message: error.message } });
     }

@@ -96,9 +96,15 @@ model RecoveryCase {
   id                String           @id @default(uuid())
   riskEventId       String
   transactionId     String
-  status            String           // OPEN, MONITORING, RECOVERED, ESCALATED, STOPPED
-  priority          String           // High, Medium, Low, Critical
-  recommendedAction String           // VERIFY_STATUS, RETRY_ELIGIBLE_PAYMENT, SEND_REMINDER, etc.
+  status            String           @default("OPEN") // OPEN, ANALYZING, ACTION_RECOMMENDED, AWAITING_APPROVAL, APPROVED, EXECUTING, VERIFYING, VERIFIED_RECOVERED, FAILED, ESCALATED, STOPPED
+  priority          String           @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT, Critical
+  recommendedAction String?          // RETRY_PAYMENT, REQUEST_CUSTOMER_RETRY, VERIFY_PAYMENT, VERIFY_SETTLEMENT, ESCALATE, STOP_RECOVERY
+  currentAction     String?
+  approvalRequired  Boolean          @default(false)
+  approvedBy        String?
+  approvedAt        DateTime?
+  rejectionReason   String?
+  attempts          Int              @default(0)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -130,17 +136,27 @@ model AIDecision {
 }
 
 model RecoveryAction {
-  id              String       @id @default(uuid())
-  recoveryCaseId  String
-  actionType      String       // VERIFY_STATUS, RETRY_ELIGIBLE_PAYMENT, SEND_REMINDER, SCHEDULE_RETRY, ESCALATE_TO_HUMAN, STOP_RECOVERY
-  status          String       // PENDING, SUCCESS, FAILED, BLOCKED
-  guardrailResult String       // PASSED, BLOCKED, HUMAN_APPROVAL_REQUIRED
-  result          String?
-  executedAt      DateTime     @default(now())
-  completedAt     DateTime?
-  createdAt       DateTime     @default(now())
+  id                 String       @id @default(uuid())
+  recoveryCaseId     String
+  paymentId          String?
+  actionType         String       // RETRY_PAYMENT, REQUEST_CUSTOMER_RETRY, VERIFY_PAYMENT, VERIFY_SETTLEMENT, ESCALATE, STOP_RECOVERY
+  status             String       @default("PENDING") // PENDING, EXECUTING, COMPLETED, FAILED, CANCELLED, SUCCESS, BLOCKED
+  attemptNumber      Int          @default(1)
+  amount             Int?
+  currency           String       @default("INR")
+  providerReference  String?
+  idempotencyKey     String?      @unique
+  guardrailResult    String?      // PASSED, BLOCKED, HUMAN_APPROVAL_REQUIRED
+  result             String?
+  initiatedAt        DateTime     @default(now())
+  completedAt        DateTime?
+  failureReason      String?
+  verificationStatus String?      // PENDING, VERIFIED, FAILED
+  executedAt         DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
 
-  recoveryCase    RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
+  recoveryCase       RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
@@ -159,7 +175,7 @@ model AuditLog {
   merchantId     String
   transactionId  String?
   recoveryCaseId String?
-  eventType      String       // PAYMENT_SYNC_STARTED, PAYMENT_SYNC_COMPLETED, PAYMENT_RISK_DETECTED, AI_ANALYSIS_STARTED, AI_ANALYSIS_COMPLETED, AI_ANALYSIS_FAILED, AI_DECISION_CREATED, RECOVERY_ACTION_APPROVED, RECOVERY_ACTION_EXECUTED, PAYMENT_STATUS_VERIFIED, SETTLEMENT_VERIFIED, RECOVERY_ESCALATED, RECOVERY_STOPPED, WEBHOOK_RECEIVED, WEBHOOK_PROCESSED
+  eventType      String       // RECOVERY_CASE_CREATED, AI_ANALYSIS_STARTED, AI_ANALYSIS_COMPLETED, RECOVERY_ACTION_RECOMMENDED, GUARDRAIL_CHECKED, APPROVAL_REQUIRED, RECOVERY_APPROVED, RECOVERY_REJECTED, RECOVERY_EXECUTION_STARTED, RECOVERY_EXECUTION_COMPLETED, RECOVERY_EXECUTION_FAILED, VERIFICATION_STARTED, VERIFICATION_COMPLETED, RECOVERY_VERIFIED, RECOVERY_ESCALATED, RECOVERY_STOPPED
   actor          String       // SYSTEM, MERCHANT, AI, HUMAN
   description    String
   metadata       String?      // JSON payload details

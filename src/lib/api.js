@@ -103,7 +103,60 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ actionType })
     });
-    if (!response.ok) throw new Error('Simulation failed.');
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || 'Simulation failed.');
+    }
+    return response.json();
+  },
+
+  approveRecoveryCase: async (id, approvedBy = 'MERCHANT', reason = 'Merchant approved recovery action.') => {
+    const response = await fetch(`${BASE_URL}/api/recovery/cases/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approvedBy, reason })
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || 'Approval failed.');
+    }
+    return response.json();
+  },
+
+  rejectRecoveryCase: async (id, rejectedBy = 'MERCHANT', reason = 'Merchant rejected recovery action.') => {
+    const response = await fetch(`${BASE_URL}/api/recovery/cases/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rejectedBy, reason })
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || 'Rejection failed.');
+    }
+    return response.json();
+  },
+
+  executeRecoveryAction: async (id, actionType, idempotencyKey = null) => {
+    const response = await fetch(`${BASE_URL}/api/recovery/cases/${id}/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actionType, idempotencyKey })
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || 'Execution failed.');
+    }
+    return response.json();
+  },
+
+  verifyRecoveryCase: async (id) => {
+    const response = await fetch(`${BASE_URL}/api/recovery/cases/${id}/verify`, {
+      method: 'POST'
+    });
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error?.message || 'Verification failed.');
+    }
     return response.json();
   },
 

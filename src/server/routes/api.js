@@ -39,13 +39,15 @@ router.post('/transactions/import', upload.single('file'), transactionController
 router.get('/transactions', paymentController.getPayments);
 router.get('/transactions/:id', paymentController.getPaymentById);
 
-// 6. Recovery Workflows & Simulation
+// 6. Recovery Workflows & Autonomous Agent
 router.get('/recovery/cases', recoveryController.getCases);
 router.get('/recovery/cases/:id', recoveryController.getCaseById);
 router.post('/recovery/cases/:id/analyze', recoveryController.analyzeCase);
-router.post('/recovery/cases/:id/simulate', recoveryController.simulateAction);
-router.post('/recovery/cases/:id/execute', recoveryController.simulateAction);
-router.post('/recovery/cases/:id/verify', paymentController.verifySettlement);
+router.post('/recovery/cases/:id/approve', recoveryController.approveCase);
+router.post('/recovery/cases/:id/reject', recoveryController.rejectCase);
+router.post('/recovery/cases/:id/execute', recoveryController.executeAction);
+router.post('/recovery/cases/:id/simulate', recoveryController.executeAction);
+router.post('/recovery/cases/:id/verify', recoveryController.verifyCase);
 router.post('/recovery/cases/:id/escalate', recoveryController.escalateCase);
 router.post('/recovery/cases/:id/stop', recoveryController.stopCase);
 

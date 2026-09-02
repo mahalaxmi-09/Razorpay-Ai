@@ -109,10 +109,10 @@ export const revenueRiskService = {
       });
       const recoveredRevenue = recoveredSum._sum.amountAtRisk !== null ? recoveredSum._sum.amountAtRisk / 100 : 0;
 
-      // 4. Active Cases Count (unresolved recovery cases)
+      // 4. Active Cases Count (unresolved in-flight recovery cases)
       const activeCasesCount = await prisma.recoveryCase.count({
         where: {
-          status: { in: ['OPEN', 'MONITORING', 'ESCALATED'] }
+          status: { in: ['OPEN', 'ANALYZING', 'ACTION_RECOMMENDED', 'AWAITING_APPROVAL', 'APPROVED', 'EXECUTING', 'VERIFYING', 'MONITORING', 'ESCALATED'] }
         }
       });
 
