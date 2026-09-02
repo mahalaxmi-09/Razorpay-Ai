@@ -23,13 +23,16 @@ export default function Signup({ onLogin, onNavigate }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBar((prev) => (prev + 1) % numBars);
-    }, 75);
+    }, 70);
     return () => clearInterval(timer);
   }, [numBars]);
 
-  const isBarActive = (idx) => {
+  const getTrailClass = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    return diff >= 0 && diff < 8;
+    if (diff >= 0 && diff < 8) {
+      return `trail-${diff}`;
+    }
+    return '';
   };
 
   const handleInputChange = (field, value) => {
@@ -109,7 +112,7 @@ export default function Signup({ onLogin, onNavigate }) {
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`rupee-tick ${isBarActive(idx) ? 'active' : ''}`}
+              className={`rupee-tick ${getTrailClass(idx)}`}
               style={{
                 transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius-signup)))`
               }}

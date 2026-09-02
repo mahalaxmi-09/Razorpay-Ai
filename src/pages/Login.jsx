@@ -19,14 +19,17 @@ export default function Login({ onLogin, onNavigate }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBar((prev) => (prev + 1) % numBars);
-    }, 75);
+    }, 70);
     return () => clearInterval(timer);
   }, [numBars]);
 
-  // Determine if a segment is within the active radar sweep trail
-  const isBarActive = (idx) => {
+  // Determine if a segment is within the active radar sweep trail and its glowing level
+  const getTrailClass = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    return diff >= 0 && diff < 8; // 8-segment luminous glow sweep trail
+    if (diff >= 0 && diff < 8) {
+      return `trail-${diff}`;
+    }
+    return '';
   };
 
   const handleEmailChange = (e) => {
@@ -97,7 +100,7 @@ export default function Login({ onLogin, onNavigate }) {
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`rupee-tick ${isBarActive(idx) ? 'active' : ''}`}
+              className={`rupee-tick ${getTrailClass(idx)}`}
               style={{
                 transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius)))`
               }}
