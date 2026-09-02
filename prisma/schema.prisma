@@ -8,108 +8,128 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  email     String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   merchants Merchant[]
 }
 
 model Merchant {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   userId          String
   name            String
   email           String
-  defaultCurrency String   @default("INR")
-  defaultLanguage String   @default("English")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  defaultCurrency String        @default("INR")
+  defaultLanguage String        @default("English")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  phone        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   transactions Transaction[]
 }
 
 model Transaction {
-  id                 String   @id // e.g. TXN_10234
-  externalPaymentId  String?  // Razorpay payment ID (e.g. pay_123)
-  externalOrderId    String?  // Razorpay order ID
-  customerId         String
-  merchantId         String
-  amount             Int      // Mapped in smallest currency unit (e.g. paise for INR)
-  currency           String   @default("INR")
-  status             String   // CAPTURED, FAILED, etc.
-  method             String?  // card, upi, netbanking
-  capturedAt         DateTime?
-  failureReason      String?
-  settlementStatus   String?  // PENDING, SETTLED
-  rawEventReference  String?  // JSON string of webhook payload
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                       String             @id // Mapped to internal/rest transaction_id
+  externalTransactionId    String?            @unique // Provider external txn reference ID
+  externalOrderId          String?            // Provider external order reference ID
+  merchantId               String
+  customerId               String
+  amount                   Int                // Stored in minor currency units (paise/cents)
+  currency                 String             @default("INR")
+  status                   String             // PENDING, AUTHORIZED, CAPTURED, FAILED, SETTLEMENT_PENDING, SETTLEMENT_PROCESSED, CANCELLED
+  paymentMethod            String             // UPI, CARD, NETBANKING, etc.
+  customerDebited          Boolean            @default(false)
+  merchantSettlementStatus String             // PENDING, PROCESSED, FAILED, UNSETTLED
+  failureReason            String?
+  retryCount               Int                @default(0)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
 
-  customer           Customer @relation(fields: [customerId], references: [id])
+  merchant                 Merchant           @relation(fields: [merchantId], references: [id])
+  customer                 Customer           @relation(fields: [customerId], references: [id])
+  revenueRiskEvents        RevenueRiskEvent[]
+  recoveryCases            RecoveryCase[]
+  aiAnalysisLogs           AIAnalysisLog[]
+  auditLogs                AuditLog[]
 }
 
 model RevenueRiskEvent {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   transactionId String
   merchantId    String
-  riskType      String   // PAYMENT_FAILED, SETTLEMENT_PENDING, CUSTOMER_DEBIT_MERCHANT_NOT_SETTLED, etc.
-  riskLevel     String   // High, Medium, Low
+  riskType      String    // PAYMENT_FAILED, SETTLEMENT_PENDING, CUSTOMER_DEBITED_NOT_SETTLED, CHECKOUT_ABANDONED, SUBSCRIPTION_FAILED, OVERDUE_PAYMENT
+  riskLevel     String    // High, Medium, Low
   amountAtRisk  Int
   reason        String
-  status        String   // OPEN, RESOLVED
-  detectedAt    DateTime @default(now())
+  status        String    // OPEN, MONITORING, RESOLVED, ESCALATED, STOPPED
+  detectedAt    DateTime  @default(now())
   resolvedAt    DateTime?
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  recoveryCases RecoveryCase[]
 }
 
 model RecoveryCase {
-  id                String   @id @default(uuid())
+  id                String           @id @default(uuid())
   riskEventId       String
   transactionId     String
-  status            String   // OPEN, MONITORING, RECOVERED, ESCALATED, STOPPED
-  recommendedAction String
-  priority          String   // High, Medium, Low
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  status            String           // OPEN, MONITORING, RECOVERED, ESCALATED, STOPPED
+  priority          String           // High, Medium, Low
+  recommendedAction String           // VERIFY_STATUS, RETRY_ELIGIBLE_PAYMENT, SEND_REMINDER, etc.
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  transaction       Transaction      @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  riskEvent         RevenueRiskEvent @relation(fields: [riskEventId], references: [id], onDelete: Cascade)
+  aiDecisions       AIDecision[]
+  recoveryActions   RecoveryAction[]
+  aiAnalysisLogs    AIAnalysisLog[]
+  auditLogs         AuditLog[]
 }
 
 model AIDecision {
-  id                String   @id @default(uuid())
+  id                String       @id @default(uuid())
   recoveryCaseId    String
   issue             String
   riskLevel         String
-  confidence        String
+  confidence        Float
   recommendedAction String
   reason            String
-  createdAt         DateTime @default(now())
+  createdAt         DateTime     @default(now())
+
+  recoveryCase      RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
 }
 
 model RecoveryAction {
-  id              String   @id @default(uuid())
+  id              String       @id @default(uuid())
   recoveryCaseId  String
-  actionType      String   // VERIFY_SETTLEMENT, RETRY_PAYMENT, SEND_REMINDER, SCHEDULE_RETRY, ESCALATE, STOP
-  status          String   // PENDING, SUCCESS, FAILED
-  guardrailResult String
-  executedAt      DateTime @default(now())
-  completedAt     DateTime?
+  actionType      String       // VERIFY_STATUS, RETRY_ELIGIBLE_PAYMENT, SEND_REMINDER, SCHEDULE_RETRY, ESCALATE_TO_HUMAN, STOP_RECOVERY
+  status          String       // PENDING, SUCCESS, FAILED, BLOCKED
+  guardrailResult String       // PASSED, BLOCKED, HUMAN_APPROVAL_REQUIRED
   result          String?
-  createdAt       DateTime @default(now())
+  executedAt      DateTime     @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+
+  recoveryCase    RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
   id          String   @id @default(uuid())
   merchantId  String
-  type        String   // RECOVERY_SUCCESS, RECOVERY_PENDING, ACTION_REQUIRED, SYSTEM_ALERT, AI_INSIGHT
+  type        String   // RISK_DETECTED, RECOVERY_STARTED, RECOVERY_COMPLETED, RECOVERY_BLOCKED, HUMAN_APPROVAL_REQUIRED, RECOVERY_ESCALATED
   title       String
   message     String
   severity    String   // info, success, warning, error
@@ -118,23 +138,30 @@ model Notification {
 }
 
 model AuditLog {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   merchantId     String
   transactionId  String?
   recoveryCaseId String?
-  eventType      String   // PAYMENT_RECEIVED, RISK_DETECTED, AI_ANALYSIS, GUARDRAIL_CHECK, RECOVERY_ACTION, RECOVERY_RESULT, NOTIFICATION_SENT
-  actor          String   // SYSTEM, MERCHANT, AI
+  eventType      String       // TRANSACTION_INGESTED, RISK_DETECTED, AI_ANALYSIS, GUARDRAIL_CHECK, RECOVERY_ACTION, RECOVERY_RESULT, NOTIFICATION_SENT
+  actor          String       // SYSTEM, MERCHANT, AI, HUMAN
   description    String
-  metadata       String?  // JSON string
-  createdAt      DateTime @default(now())
+  metadata       String?      // JSON payload details
+  createdAt      DateTime     @default(now())
+
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  recoveryCase   RecoveryCase? @relation(fields: [recoveryCaseId], references: [id])
 }
 
-model WebhookEvent {
-  id              String   @id @default(uuid())
-  externalEventId String   @unique // Razorpay event ID (e.g. evt_123)
-  eventType       String   // payment.captured, payment.failed
-  payloadHash     String
-  receivedAt      DateTime @default(now())
-  processedAt     DateTime?
-  status          String   // RECEIVED, PROCESSED, ERROR
+model AIAnalysisLog {
+  id             String       @id @default(uuid())
+  transactionId  String
+  recoveryCaseId String
+  model          String
+  inputReference String       // details of data parameters sent to LLM
+  decision       String       // full parsed response JSON
+  confidence     Float
+  createdAt      DateTime     @default(now())
+
+  transaction    Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  recoveryCase   RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
 }

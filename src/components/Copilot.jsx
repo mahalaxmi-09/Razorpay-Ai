@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Send, Bot, User } from 'lucide-react';
+import { api } from '../lib/api';
 
 export default function Copilot({ isOpen, setIsOpen }) {
   const [messages, setMessages] = useState([
     {
       sender: 'bot',
-      text: "Connect your transaction data to start analyzing revenue recovery."
+      text: "Hello! I am your RazorRecover AI Copilot. Ask me anything about your revenue at risk, payment failures, or recovery cases."
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
 
   const suggestedQuestions = [
@@ -19,22 +21,23 @@ export default function Copilot({ isOpen, setIsOpen }) {
     "What can I recover this week?"
   ];
 
-  const getMockAnswer = (question) => {
-    return "I need transaction data to answer that accurately. Connect your payment data first.";
-  };
-
-  const handleSend = (text) => {
-    if (!text.trim()) return;
+  const handleSend = async (text) => {
+    if (!text.trim() || loading) return;
 
     // Add user message
     setMessages((prev) => [...prev, { sender: 'user', text }]);
     setInputValue('');
+    setLoading(true);
 
-    // Simulate AI typing delay
-    setTimeout(() => {
-      const responseText = getMockAnswer(text);
-      setMessages((prev) => [...prev, { sender: 'bot', text: responseText }]);
-    }, 600);
+    try {
+      const response = await api.askCopilot(text);
+      const replyText = response.data?.reply || response.reply || "I couldn't retrieve recovery data for that request.";
+      setMessages((prev) => [...prev, { sender: 'bot', text: replyText }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { sender: 'bot', text: "I need transaction data to answer accurately. Please make sure the backend database is connected." }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
