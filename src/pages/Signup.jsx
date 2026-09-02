@@ -18,18 +18,18 @@ export default function Signup({ onLogin, onNavigate }) {
 
   // Rotating circle active indicator index
   const [activeBar, setActiveBar] = useState(0);
-  const numBars = 48;
+  const numBars = 52;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBar((prev) => (prev + 1) % numBars);
-    }, 80);
+    }, 75);
     return () => clearInterval(timer);
   }, [numBars]);
 
   const isBarActive = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    return diff >= 0 && diff < 8;
+    return diff >= 0 && diff < 9;
   };
 
   const handleInputChange = (field, value) => {
@@ -104,18 +104,16 @@ export default function Signup({ onLogin, onNavigate }) {
   return (
     <div className="login-page-wrapper">
       <div className="login-container">
-        {/* Rotating circle animation containing the vertical ₹ currency symbols */}
+        {/* Large outer circular radar animation enclosing the card */}
         <div className="circle-container">
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`currency-tick ${isBarActive(idx) ? 'active' : ''}`}
+              className={`radar-light ${isBarActive(idx) ? 'active' : ''}`}
               style={{
                 transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius-signup)))`
               }}
-            >
-              ₹
-            </div>
+            />
           ))}
         </div>
 

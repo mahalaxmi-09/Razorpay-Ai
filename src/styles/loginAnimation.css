@@ -1,20 +1,20 @@
 /* Reset & Base Styles for Login Page Wrapper context */
 :root {
-  --radar-radius: 360px;
-  --radar-radius-signup: 380px;
+  --radar-radius: 380px;
+  --radar-radius-signup: 400px;
 }
 
-@media (max-height: 850px), (max-width: 900px) {
+@media (max-height: 900px), (max-width: 950px) {
   :root {
-    --radar-radius: 320px;
-    --radar-radius-signup: 340px;
+    --radar-radius: 340px;
+    --radar-radius-signup: 360px;
   }
 }
 
-@media (max-height: 700px), (max-width: 600px) {
+@media (max-height: 750px), (max-width: 700px) {
   :root {
-    --radar-radius: 280px;
-    --radar-radius-signup: 290px;
+    --radar-radius: 290px;
+    --radar-radius-signup: 310px;
   }
 }
 
@@ -59,29 +59,26 @@
   z-index: 1;
 }
 
-/* Vertically / Radially Oriented Rupee Currency Radar Symbols */
-.currency-tick {
+/* Big Glowing Radar Indicator Lights (Pill Shape) */
+.radar-light {
   position: absolute;
-  font-size: 17px;
-  font-weight: 800;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: rgba(0, 150, 255, 0.16); /* Subtle blue transparent */
+  width: 7px;
+  height: 28px;
+  background: rgba(0, 150, 255, 0.13); /* Subtle transparent blue */
+  border-radius: 4px;
   transform-origin: center center;
-  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.15s ease;
+  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
   user-select: none;
-  display: inline-block;
-  text-align: center;
-  line-height: 1;
 }
 
-/* Active glowing radar currency segment */
-.currency-tick.active {
-  color: #FFFFFF;
-  text-shadow: 0 0 14px #0096FF, 0 0 28px rgba(0, 150, 255, 0.95), 0 0 6px #A6DBFF;
-  transform: scale(1.3) !important;
+/* Active glowing radar light segment (bright neon blue to white tip glow) */
+.radar-light.active {
+  background: linear-gradient(180deg, #FFFFFF 0%, #0096FF 100%);
+  box-shadow: 0 0 16px rgba(0, 150, 255, 1), 0 0 32px rgba(0, 150, 255, 0.75), 0 0 8px #FFFFFF;
+  transform: scale(1.25) !important;
 }
 
-/* Login Box Card Wrapper (Inside the circle) */
+/* Login Box Card Wrapper (Sitting completely inside the big circle) */
 .login-box {
   position: relative;
   z-index: 10;
