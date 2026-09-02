@@ -1,13 +1,20 @@
 /* Reset & Base Styles for Login Page Wrapper context */
 :root {
-  --radar-radius: 250px; /* 500px circular ring diameter */
-  --radar-radius-signup: 250px;
+  --radar-radius: 360px; /* 720px circle diameter - clearly bigger than the 500px card */
+  --radar-radius-signup: 380px;
 }
 
-@media (max-width: 550px) {
+@media (max-height: 900px), (max-width: 950px) {
   :root {
-    --radar-radius: min(250px, 45vw);
-    --radar-radius-signup: min(250px, 45vw);
+    --radar-radius: 330px;
+    --radar-radius-signup: 350px;
+  }
+}
+
+@media (max-height: 750px), (max-width: 700px) {
+  :root {
+    --radar-radius: 290px;
+    --radar-radius-signup: 310px;
   }
 }
 
@@ -38,7 +45,7 @@
   z-index: 10;
 }
 
-/* 500px Circle container */
+/* Big Circle container surrounding the card */
 .circle-container {
   position: absolute;
   top: 50%;
@@ -55,7 +62,7 @@
 /* Clearly Visible Big Vertically / Radially Oriented Rupee (₹) Radar Symbols */
 .rupee-tick {
   position: absolute;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: rgba(0, 150, 255, 0.35); /* Crisp, clearly visible blue outline */
