@@ -200,5 +200,8 @@ export const recoverySimulatorService = {
       console.error('recoverySimulatorService.simulateAction error:', error.message);
       throw error;
     }
+  },
+  simulateRecovery: async function(recoveryCaseId, actionType, actor = 'MERCHANT') {
+    return this.simulateAction(recoveryCaseId, actionType, actor);
   }
 };

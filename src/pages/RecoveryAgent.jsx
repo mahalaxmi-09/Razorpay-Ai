@@ -10,7 +10,8 @@ import {
   ShieldCheck, 
   AlertCircle, 
   CheckCircle,
-  PlayCircle
+  PlayCircle,
+  Sparkles
 } from 'lucide-react';
 import { api } from '../lib/api';
 
@@ -19,6 +20,7 @@ export default function RecoveryAgent({ onNavigate }) {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
+  const [analyzingCaseId, setAnalyzingCaseId] = useState(null);
 
   const fetchCases = async () => {
     try {
@@ -54,7 +56,7 @@ export default function RecoveryAgent({ onNavigate }) {
   const analyzeCases = cases.filter(c => c.status === 'MONITORING');
   const decideCases = cases.filter(c => c.aiDecisions && c.aiDecisions.length > 0);
   const guardrailCases = cases.filter(c => c.status === 'ESCALATED' || c.status === 'STOPPED');
-  const recoverCases = cases.filter(c => c.recommendedAction === 'RETRY_ELIGIBLE_PAYMENT');
+  const recoverCases = cases.filter(c => c.recommendedAction === 'RETRY_ELIGIBLE_PAYMENT' || c.recommendedAction === 'REQUEST_CUSTOMER_RETRY');
   const verifyCases = cases.filter(c => c.status === 'RECOVERED');
 
   const stages = [
@@ -81,6 +83,22 @@ export default function RecoveryAgent({ onNavigate }) {
     }
   };
 
+  const handleAnalyzeWithAI = async (caseId) => {
+    try {
+      setAnalyzingCaseId(caseId);
+      setActionMessage(`🤖 Requesting AI analysis for ${caseId}...`);
+      const res = await api.analyzeRecoveryCase(caseId);
+      setActionMessage(`✅ AI Analysis Completed for ${caseId} (${res.decisionSource || 'AI Engine'})`);
+      await fetchCases();
+      setTimeout(() => setActionMessage(''), 4000);
+    } catch (err) {
+      setActionMessage(`⚠️ AI Analysis Error: ${err.message}`);
+      setTimeout(() => setActionMessage(''), 4000);
+    } finally {
+      setAnalyzingCaseId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -88,14 +106,14 @@ export default function RecoveryAgent({ onNavigate }) {
         <div>
           <h2 className="text-xl md:text-2xl font-black text-navy-dark leading-none select-none">AI Recovery Agent</h2>
           <p className="text-xs md:text-sm text-secondary-text mt-1">
-            Observe the active AI reconciliation pipeline and autonomous recovery workflows.
+            Autonomous revenue recovery pipeline powered by OpenAI reasoning and safety guardrails.
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success-green/10 text-success-green rounded-lg border border-success-green/20 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
-            <span>Agent Status: ACTIVE (TEST MODE)</span>
+            <span>AI Reasoning: ONLINE (TEST MODE)</span>
           </div>
         </div>
       </div>
@@ -179,32 +197,59 @@ export default function RecoveryAgent({ onNavigate }) {
                 activeStageData.cases.map((c) => {
                   const txn = c.transaction || {};
                   const displayAmt = txn.amount ? `₹${(txn.amount / 100).toLocaleString('en-IN')}` : '₹0';
+                  const latestDecision = c.aiDecisions && c.aiDecisions.length > 0 ? c.aiDecisions[0] : null;
 
                   return (
-                    <div key={c.id} className="py-3 flex items-center justify-between text-xs hover:bg-bg-light/20 px-2 rounded-lg -mx-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(`#/payments/${c.transactionId}`)}>
-                            {c.transactionId}
-                          </span>
-                          <span className={`text-[9px] px-1.5 py-0.2 font-bold rounded ${c.priority === 'High' ? 'bg-error-red/10 text-error-red' : 'bg-warning-amber/10 text-warning-amber'}`}>
-                            {c.priority} Priority
-                          </span>
+                    <div key={c.id} className="py-3 flex flex-col gap-2 hover:bg-bg-light/20 px-2 rounded-lg -mx-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(`#/payments/${c.transactionId}`)}>
+                              {c.transactionId}
+                            </span>
+                            <span className={`text-[9px] px-1.5 py-0.2 font-bold rounded ${c.priority === 'High' ? 'bg-error-red/10 text-error-red' : 'bg-warning-amber/10 text-warning-amber'}`}>
+                              {c.priority} Priority
+                            </span>
+                            {latestDecision && (
+                              <span className="text-[9px] px-1.5 py-0.2 bg-primary/10 text-primary font-bold rounded flex items-center gap-1">
+                                <Sparkles size={10} /> {(latestDecision.confidence * 100).toFixed(0)}% AI Conf.
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-secondary-text text-[11px] font-semibold">
+                            Recommended: <span className="text-navy-dark font-bold">{c.recommendedAction}</span> • Status: {c.status}
+                          </p>
                         </div>
-                        <p className="text-secondary-text text-[11px] font-semibold">
-                          Recommended: <span className="text-navy-dark font-bold">{c.recommendedAction}</span> • Status: {c.status}
-                        </p>
+                        
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-navy-dark mr-2">{displayAmt}</span>
+                          <button 
+                            onClick={() => handleAnalyzeWithAI(c.id)}
+                            disabled={analyzingCaseId === c.id}
+                            className="px-2.5 py-1 bg-card-bg border border-border-light hover:border-primary text-navy-dark hover:bg-primary/5 text-[10px] font-bold rounded transition cursor-pointer flex items-center gap-1"
+                          >
+                            <Sparkles size={10} className="text-primary" />
+                            <span>{analyzingCaseId === c.id ? 'Analyzing...' : 'Analyze with AI'}</span>
+                          </button>
+                          <button 
+                            onClick={() => handleTriggerSim(c.id, c.recommendedAction)}
+                            className="px-2.5 py-1 bg-primary text-white text-[10px] font-bold rounded transition hover:bg-primary/90 cursor-pointer shadow-sm"
+                          >
+                            Simulate
+                          </button>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-navy-dark">{displayAmt}</span>
-                        <button 
-                          onClick={() => handleTriggerSim(c.id, c.recommendedAction)}
-                          className="px-2.5 py-1 bg-primary text-white text-[10px] font-bold rounded transition hover:bg-primary/90 cursor-pointer shadow-sm"
-                        >
-                          Simulate Action
-                        </button>
-                      </div>
+
+                      {/* AI Decision Panel if present */}
+                      {latestDecision && (
+                        <div className="p-2.5 bg-bg-light/60 border border-border-light rounded-md text-[11px] text-secondary-text space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-navy-dark">Root Cause: <span className="text-primary">{latestDecision.rootCause || latestDecision.issue}</span></span>
+                            <span className="text-[9px] font-bold text-secondary-text">Source: {latestDecision.decisionSource || latestDecision.model || 'OpenAI'}</span>
+                          </div>
+                          <p className="text-[10px] text-navy-dark">{latestDecision.merchantMessage || latestDecision.reasoningSummary || latestDecision.reason}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })

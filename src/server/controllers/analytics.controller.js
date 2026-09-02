@@ -1,4 +1,6 @@
 import { prisma } from '../config/db.js';
+import { revenueRiskService } from '../services/revenueRisk.service.js';
+import { aiService } from '../services/ai.service.js';
 
 export const analyticsController = {
   getRecoveryAnalytics: async (req, res) => {
@@ -32,6 +34,23 @@ export const analyticsController = {
       return res.status(500).json({
         success: false,
         error: { code: 'ANALYTICS_ERROR', message: 'Failed to aggregate recovery statistics.' }
+      });
+    }
+  },
+
+  analyzeWhatIf: async (req, res) => {
+    try {
+      const { scenario } = req.body;
+      const summary = await revenueRiskService.getSummary();
+
+      const result = await aiService.analyzeWhatIf(scenario, summary);
+
+      return res.json(result);
+    } catch (error) {
+      console.error('analyticsController.analyzeWhatIf error:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'SIMULATION_ERROR', message: 'Failed to run what-if scenario analysis.' }
       });
     }
   }

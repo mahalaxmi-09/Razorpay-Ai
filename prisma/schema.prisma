@@ -113,11 +113,17 @@ model RecoveryCase {
 model AIDecision {
   id                String       @id @default(uuid())
   recoveryCaseId    String
-  issue             String
+  rootCause         String       @default("UNKNOWN")
   riskLevel         String       // LOW, MEDIUM, HIGH, CRITICAL
+  recommendedAction String       // RETRY_PAYMENT, REQUEST_CUSTOMER_RETRY, VERIFY_PAYMENT, VERIFY_SETTLEMENT, ESCALATE, STOP_RECOVERY
   confidence        Float
-  recommendedAction String
-  reason            String
+  reasoningSummary  String       @default("")
+  priority          String       @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  shouldEscalate    Boolean      @default(false)
+  stopRecovery      Boolean      @default(false)
+  merchantMessage   String?
+  decisionSource    String       @default("RULE_ENGINE") // OPENAI or RULE_ENGINE
+  model             String       @default("gpt-4o")
   createdAt         DateTime     @default(now())
 
   recoveryCase      RecoveryCase @relation(fields: [recoveryCaseId], references: [id], onDelete: Cascade)
@@ -153,7 +159,7 @@ model AuditLog {
   merchantId     String
   transactionId  String?
   recoveryCaseId String?
-  eventType      String       // PAYMENT_SYNC_STARTED, PAYMENT_SYNC_COMPLETED, PAYMENT_RISK_DETECTED, AI_ANALYSIS_CREATED, RECOVERY_DECISION_CREATED, RECOVERY_ACTION_APPROVED, RECOVERY_ACTION_EXECUTED, PAYMENT_STATUS_VERIFIED, SETTLEMENT_VERIFIED, RECOVERY_ESCALATED, RECOVERY_STOPPED, WEBHOOK_RECEIVED, WEBHOOK_PROCESSED
+  eventType      String       // PAYMENT_SYNC_STARTED, PAYMENT_SYNC_COMPLETED, PAYMENT_RISK_DETECTED, AI_ANALYSIS_STARTED, AI_ANALYSIS_COMPLETED, AI_ANALYSIS_FAILED, AI_DECISION_CREATED, RECOVERY_ACTION_APPROVED, RECOVERY_ACTION_EXECUTED, PAYMENT_STATUS_VERIFIED, SETTLEMENT_VERIFIED, RECOVERY_ESCALATED, RECOVERY_STOPPED, WEBHOOK_RECEIVED, WEBHOOK_PROCESSED
   actor          String       // SYSTEM, MERCHANT, AI, HUMAN
   description    String
   metadata       String?      // JSON payload details
@@ -168,9 +174,12 @@ model AIAnalysisLog {
   transactionId  String
   recoveryCaseId String
   model          String
-  inputReference String
+  status         String       @default("SUCCESS") // SUCCESS, FALLBACK, FAILED
+  latencyMs      Int          @default(0)
+  inputSummary   String       @default("")
   decision       String
   confidence     Float
+  errorMessage   String?
   createdAt      DateTime     @default(now())
 
   transaction    Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)

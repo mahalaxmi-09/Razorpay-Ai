@@ -4,14 +4,27 @@ import { revenueRiskService } from '../services/revenueRisk.service.js';
 export const dashboardController = {
   getSummary: async (req, res) => {
     try {
-      const summary = await revenueRiskService.getSummary();
+      const [summary, user, merchant] = await Promise.all([
+        revenueRiskService.getSummary(),
+        prisma.user.findFirst(),
+        prisma.merchant.findFirst()
+      ]);
+
+      const merchantName = user?.name || merchant?.name || 'Mounika';
+
       return res.json({
-        revenueAtRisk: summary.revenueAtRisk !== null ? summary.revenueAtRisk / 100 : null,
-        recoveredRevenue: summary.recoveredRevenue !== null ? summary.recoveredRevenue / 100 : null,
+        merchantName,
+        userName: user?.name || merchantName,
+        totalTransactions: summary.totalTransactions,
+        revenueAtRisk: summary.revenueAtRisk,
+        recoveredRevenue: summary.recoveredRevenue,
         activeCases: summary.activeCases,
+        activeRecoveryCases: summary.activeCases,
         recoveryRate: summary.recoveryRate,
         pendingCases: summary.pendingCases,
-        escalatedCases: summary.escalatedCases
+        escalatedCases: summary.escalatedCases,
+        settlementIssues: summary.settlementIssues,
+        failedPayments: summary.failedPayments
       });
     } catch (error) {
       console.error('dashboardController.getSummary error:', error.message);
@@ -59,15 +72,15 @@ export const dashboardController = {
       }));
 
       return res.json({
-        recentActions,
-        recentRiskEvents: mappedRiskEvents,
-        recentNotifications: mappedNotifications
+        actions: recentActions,
+        riskEvents: mappedRiskEvents,
+        notifications: mappedNotifications
       });
     } catch (error) {
       console.error('dashboardController.getActivity error:', error.message);
       return res.status(500).json({
         success: false,
-        error: { code: 'DASHBOARD_ERROR', message: 'Failed to fetch dashboard activity logs.' }
+        error: { code: 'DASHBOARD_ERROR', message: 'Failed to fetch activity records.' }
       });
     }
   }

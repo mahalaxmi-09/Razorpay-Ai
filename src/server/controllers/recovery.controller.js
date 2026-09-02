@@ -71,13 +71,13 @@ export const recoveryController = {
     }
   },
 
-  // 3. Analyze Case (Rules Engine + Optional OpenAI)
+  // 3. Analyze Case (OpenAI + Rules Engine Fallback)
   analyzeCase: async (req, res) => {
     try {
       const { id } = req.params;
       const recoveryCase = await prisma.recoveryCase.findUnique({
         where: { id },
-        include: { transaction: true }
+        include: { transaction: true, riskEvent: true }
       });
 
       if (!recoveryCase) {
@@ -87,11 +87,24 @@ export const recoveryController = {
         });
       }
 
-      const decision = await aiService.analyzeRevenueRisk(recoveryCase.transaction, recoveryCase.id);
+      await prisma.auditLog.create({
+        data: {
+          merchantId: recoveryCase.transaction.merchantId || 'SYSTEM',
+          transactionId: recoveryCase.transactionId,
+          recoveryCaseId: recoveryCase.id,
+          eventType: 'AI_ANALYSIS_STARTED',
+          actor: 'AI',
+          description: `AI revenue recovery analysis started for case ${recoveryCase.id}.`
+        }
+      });
+
+      const result = await aiService.analyzeRevenueRisk(recoveryCase.transaction, recoveryCase.id);
 
       return res.json({
         success: true,
-        data: decision
+        data: result.data,
+        decisionSource: result.decisionSource,
+        latencyMs: result.latencyMs
       });
     } catch (error) {
       console.error('recoveryController.analyzeCase error:', error.message);
@@ -102,20 +115,20 @@ export const recoveryController = {
     }
   },
 
-  // 4. Simulate Action
+  // 4. Simulate Recovery Action
   simulateAction: async (req, res) => {
     try {
       const { id } = req.params;
       const { actionType } = req.body;
 
-      if (!actionType) {
+      const result = await recoverySimulatorService.simulateRecovery(id, actionType);
+
+      if (!result.success) {
         return res.status(400).json({
           success: false,
-          error: { code: 'INVALID_INPUT', message: 'actionType is required.' }
+          error: { code: 'GUARDRAIL_BLOCKED', message: result.reason }
         });
       }
-
-      const result = await recoverySimulatorService.simulateAction(id, actionType);
 
       return res.json({
         success: true,
@@ -125,44 +138,58 @@ export const recoveryController = {
       console.error('recoveryController.simulateAction error:', error.message);
       return res.status(500).json({
         success: false,
-        error: { code: 'SIMULATION_ERROR', message: error.message || 'Simulation execution failed.' }
+        error: { code: 'SIMULATION_ERROR', message: error.message }
       });
     }
   },
 
-  // 5. Escalate Case
+  // 5. Escalate Case to Human Queue
   escalateCase: async (req, res) => {
     try {
       const { id } = req.params;
-      const result = await recoverySimulatorService.simulateAction(id, 'ESCALATE_TO_HUMAN');
-      return res.json({
-        success: true,
-        data: result
+      const updatedCase = await prisma.recoveryCase.update({
+        where: { id },
+        data: { status: 'ESCALATED', priority: 'High' }
       });
+
+      await prisma.auditLog.create({
+        data: {
+          merchantId: 'SYSTEM',
+          recoveryCaseId: id,
+          eventType: 'RECOVERY_ESCALATED',
+          actor: 'MERCHANT',
+          description: `Recovery case ${id} escalated for human compliance review.`
+        }
+      });
+
+      return res.json({ success: true, data: updatedCase });
     } catch (error) {
-      console.error('recoveryController.escalateCase error:', error.message);
-      return res.status(500).json({
-        success: false,
-        error: { code: 'ESCALATION_ERROR', message: 'Failed to escalate case.' }
-      });
+      return res.status(500).json({ success: false, error: { message: error.message } });
     }
   },
 
-  // 6. Stop Recovery
+  // 6. Stop Case Recovery
   stopCase: async (req, res) => {
     try {
       const { id } = req.params;
-      const result = await recoverySimulatorService.simulateAction(id, 'STOP_RECOVERY');
-      return res.json({
-        success: true,
-        data: result
+      const updatedCase = await prisma.recoveryCase.update({
+        where: { id },
+        data: { status: 'STOPPED' }
       });
+
+      await prisma.auditLog.create({
+        data: {
+          merchantId: 'SYSTEM',
+          recoveryCaseId: id,
+          eventType: 'RECOVERY_STOPPED',
+          actor: 'MERCHANT',
+          description: `Recovery case ${id} permanently halted.`
+        }
+      });
+
+      return res.json({ success: true, data: updatedCase });
     } catch (error) {
-      console.error('recoveryController.stopCase error:', error.message);
-      return res.status(500).json({
-        success: false,
-        error: { code: 'STOP_ERROR', message: 'Failed to stop recovery.' }
-      });
+      return res.status(500).json({ success: false, error: { message: error.message } });
     }
   }
 };

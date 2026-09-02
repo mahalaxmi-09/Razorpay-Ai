@@ -9,30 +9,15 @@ import { api } from '../lib/api';
 
 export default function Dashboard({ lang, currency, merchantName, onNavigate, transactions = [] }) {
   const [summary, setSummary] = useState({
+    merchantName: null,
+    userName: null,
     revenueAtRisk: null,
     recoveredRevenue: null,
     activeCases: 0,
     recoveryRate: null
   });
 
-  // Dynamic greetings based on language
-  const getGreeting = () => {
-    switch (lang) {
-      case 'తెలుగు': return `శుభోదయం, ${merchantName} 👋`;
-      case 'हिंदी': return `सुप्रभात, ${merchantName} 👋`;
-      default: return `Good morning, ${merchantName} 👋`;
-    }
-  };
-
-  const getSubtitle = () => {
-    switch (lang) {
-      case 'తెలుగు': return 'ఇదిగో మీ రాబడి రికవరీ అవలోకనం.';
-      case 'हिंदी': return 'यहाँ आपका राजस्व सुधार अवलोकन है।';
-      default: return "Here's your revenue recovery overview.";
-    }
-  };
-
-  // Fetch summary aggregates from backend API
+  // Fetch summary aggregates and database user name from backend API
   useEffect(() => {
     const fetchSummary = async () => {
       try {
@@ -44,6 +29,46 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
     };
     fetchSummary();
   }, [transactions]);
+
+  // Dynamic time-based greetings based on database user name:
+  // 12:00 AM to 11:59 AM -> Good morning
+  // 12:00 PM to 5:00 PM -> Good afternoon
+  // After 5:00 PM to 11:59 PM -> Good evening
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const displayName = summary.userName || summary.merchantName || merchantName || 'User';
+
+    if (hour < 12) {
+      // 12:00 AM to 11:59 AM
+      switch (lang) {
+        case 'తెలుగు': return `శుభోదయం, ${displayName} 👋`;
+        case 'हिंदी': return `सुप्रभात, ${displayName} 👋`;
+        default: return `Good morning, ${displayName} 👋`;
+      }
+    } else if (hour < 17) {
+      // 12:00 PM to 5:00 PM
+      switch (lang) {
+        case 'తెలుగు': return `శుభ మధ్యాహ్నం, ${displayName} 👋`;
+        case 'हिंदी': return `शुभ दोपहर, ${displayName} 👋`;
+        default: return `Good afternoon, ${displayName} 👋`;
+      }
+    } else {
+      // After 5:00 PM to 11:59 PM
+      switch (lang) {
+        case 'తెలుగు': return `శుభ సాయంత్రం, ${displayName} 👋`;
+        case 'हिंदी': return `शुभ संध्या, ${displayName} 👋`;
+        default: return `Good evening, ${displayName} 👋`;
+      }
+    }
+  };
+
+  const getSubtitle = () => {
+    switch (lang) {
+      case 'తెలుగు': return 'ఇదిగో మీ రాబడి రికవరీ అవలోకనం.';
+      case 'हिंदी': return 'यहाँ आपका राजस्व सुधार अवलोकन है।';
+      default: return "Here's your revenue recovery overview.";
+    }
+  };
 
   const totalRisk = summary.revenueAtRisk;
   const totalRecovered = summary.recoveredRevenue;
@@ -81,6 +106,7 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
           value={activeCasesCount} 
           type="navy" 
           isPercentage={false}
+          isCount={true}
           currency={currency} 
         />
         <KPICard 

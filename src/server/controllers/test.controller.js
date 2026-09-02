@@ -103,11 +103,17 @@ export const testController = {
       await prisma.aIDecision.create({
         data: {
           recoveryCaseId: case2.id,
-          issue: 'Customer bank reported temporary fund deficit',
+          rootCause: 'INSUFFICIENT_FUNDS',
           riskLevel: 'MEDIUM',
           confidence: 0.92,
-          recommendedAction: 'RETRY_ELIGIBLE_PAYMENT',
-          reason: 'Standard transient auth failure. Fallback link recommended.'
+          recommendedAction: 'REQUEST_CUSTOMER_RETRY',
+          reasoningSummary: 'Customer bank reported temporary fund deficit. Fallback link recommended.',
+          priority: 'MEDIUM',
+          shouldEscalate: false,
+          stopRecovery: false,
+          merchantMessage: 'Your customer experienced a temporary bank balance issue. An automated retry link was provided.',
+          decisionSource: 'RULE_ENGINE',
+          model: 'gpt-4o'
         }
       });
 

@@ -56,6 +56,7 @@ router.get('/dashboard/activity', dashboardController.getActivity);
 // 8. Analytics Endpoints
 router.get('/analytics/recovery', analyticsController.getRecoveryAnalytics);
 router.get('/analytics/performance', analyticsController.getRecoveryAnalytics);
+router.post('/analytics/what-if', analyticsController.analyzeWhatIf);
 
 // 9. Notifications / Alerts
 router.get('/alerts', alertController.getAlerts);
