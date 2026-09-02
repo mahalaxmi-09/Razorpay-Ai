@@ -85,7 +85,7 @@ export default function AIInsight({ transactions = [], onNavigate }) {
         <div className="flex flex-col items-center justify-center text-center h-full gap-2 py-2">
           <div className="flex items-center gap-1.5 justify-center">
             <Lightbulb size={16} className="text-secondary-text/60 animate-pulse" />
-            <span className="text-navy-dark font-extrabold text-xs block">No insights available yet.</span>
+            <span className="text-navy-dark font-extrabold text-xs block">No AI insights available yet.</span>
           </div>
           <p className="text-secondary-text text-[11px] leading-normal max-w-xs">
             Insights will appear dynamically as transaction records enter the system.

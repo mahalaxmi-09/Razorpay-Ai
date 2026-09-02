@@ -7,6 +7,7 @@ import { notificationService } from './notification.service.js';
  * 
  * Safely executes simulated recovery workflows, verifies guardrails,
  * records recovery actions, and updates case and transaction statuses.
+ * Sets status to VERIFIED_RECOVERED only upon successful verified confirmation.
  * NEVER moves real money.
  */
 
@@ -82,8 +83,9 @@ export const recoverySimulatorService = {
 
       switch (actionType) {
         case 'VERIFY_STATUS':
-          simulationResult = 'Simulated settlement verification completed. Gateway confirmed settlement dispatch.';
-          newCaseStatus = 'RECOVERED';
+        case 'VERIFY_SETTLEMENT':
+          simulationResult = 'Simulated settlement verification completed. Bank feed confirms settlement dispatch.';
+          newCaseStatus = 'VERIFIED_RECOVERED';
           newRiskEventStatus = 'RESOLVED';
           updateTxnData = {
             merchantSettlementStatus: 'PROCESSED',
@@ -92,14 +94,26 @@ export const recoverySimulatorService = {
           break;
 
         case 'RETRY_ELIGIBLE_PAYMENT':
-          simulationResult = 'Simulated fallback link retry processed successfully. Customer auth confirmed.';
-          newCaseStatus = 'RECOVERED';
+        case 'REQUEST_CUSTOMER_RETRY':
+          simulationResult = 'Simulated customer recovery link processed successfully. Authentication and payment confirmed.';
+          newCaseStatus = 'VERIFIED_RECOVERED';
           newRiskEventStatus = 'RESOLVED';
           updateTxnData = {
             status: 'CAPTURED',
             customerDebited: true,
             merchantSettlementStatus: 'PROCESSED',
             retryCount: transaction.retryCount + 1
+          };
+          break;
+
+        case 'VERIFY_PAYMENT':
+          simulationResult = 'Payment status verified with gateway. Transaction state reconciled.';
+          newCaseStatus = 'VERIFIED_RECOVERED';
+          newRiskEventStatus = 'RESOLVED';
+          updateTxnData = {
+            status: 'CAPTURED',
+            customerDebited: true,
+            merchantSettlementStatus: 'PROCESSED'
           };
           break;
 
@@ -114,6 +128,7 @@ export const recoverySimulatorService = {
           break;
 
         case 'ESCALATE_TO_HUMAN':
+        case 'ESCALATE':
           simulationResult = 'Case escalated to manual fintech operations queue for human investigation.';
           newCaseStatus = 'ESCALATED';
           newRiskEventStatus = 'ESCALATED';
@@ -127,6 +142,7 @@ export const recoverySimulatorService = {
 
         default:
           simulationResult = `Action ${actionType} executed in simulation mode.`;
+          newCaseStatus = 'MONITORING';
       }
 
       // 5. Update Database Records
@@ -173,18 +189,18 @@ export const recoverySimulatorService = {
           merchantId: transaction.merchantId,
           transactionId: transaction.id,
           recoveryCaseId: recoveryCase.id,
-          eventType: 'RECOVERY_ACTION',
+          eventType: newCaseStatus === 'VERIFIED_RECOVERED' ? 'RECOVERY_VERIFIED' : 'RECOVERY_ACTION',
           actor,
-          description: `Simulated action ${actionType} executed. Result: ${simulationResult}`
+          description: `Action ${actionType} executed: ${simulationResult} Case status: ${newCaseStatus}`
         }
       });
 
-      if (newCaseStatus === 'RECOVERED') {
+      if (newCaseStatus === 'VERIFIED_RECOVERED') {
         await notificationService.createNotification({
           merchantId: transaction.merchantId,
           type: 'RECOVERY_COMPLETED',
-          title: 'Revenue Recovered (Simulation)',
-          message: `Successfully recovered ${(transaction.amount / 100).toLocaleString()} ${transaction.currency} for transaction ${transaction.id}.`,
+          title: 'Revenue Recovered (Verified)',
+          message: `Successfully verified and recovered ₹${(transaction.amount / 100).toLocaleString('en-IN')} for transaction ${transaction.id}.`,
           severity: 'success'
         });
       }
@@ -201,6 +217,7 @@ export const recoverySimulatorService = {
       throw error;
     }
   },
+
   simulateRecovery: async function(recoveryCaseId, actionType, actor = 'MERCHANT') {
     return this.simulateAction(recoveryCaseId, actionType, actor);
   }

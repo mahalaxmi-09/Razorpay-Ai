@@ -3,7 +3,6 @@ import { Sparkles, Activity } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
 
 export default function AIActivity({ transactions = [], currency }) {
-  
   const getStatusColor = (status) => {
     switch (status) {
       case 'success': return 'bg-success-green';
@@ -16,14 +15,21 @@ export default function AIActivity({ transactions = [], currency }) {
   const hasActivity = transactions.length > 0;
 
   // Map activities dynamically from real database transactions
-  const activities = transactions.slice(0, 4).map(t => ({
-    id: t.id,
-    status: t.status === 'Recovered' ? 'success' : (t.status === 'Payment Failed' ? 'error' : 'warning'),
-    amount: t.amount,
-    title: t.status,
-    description: t.failureReason || (t.status === 'Recovered' ? 'Settlement verified and resolved' : (t.status === 'Settlement Pending' ? 'Settlement reconciliation in progress' : 'Monitored by recovery engine')),
-    time: t.date || 'Recently'
-  }));
+  const activities = transactions.slice(0, 4).map(t => {
+    const isRecovered = t.status === 'Recovered' || t.status === 'VERIFIED_RECOVERED';
+    return {
+      id: t.id,
+      status: isRecovered ? 'success' : (t.status === 'Payment Failed' || t.status === 'FAILED' ? 'error' : 'warning'),
+      amount: t.amount,
+      title: isRecovered 
+        ? `✓ ${formatCurrency(t.amount, currency)} recovered` 
+        : `${formatCurrency(t.amount, currency)} • ${t.status}`,
+      description: isRecovered 
+        ? 'Payment verified successfully' 
+        : (t.failureReason || (t.status === 'Settlement Pending' ? 'Settlement reconciliation in progress' : 'Monitored by recovery engine')),
+      time: t.date || 'Recently'
+    };
+  });
 
   return (
     <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm flex flex-col h-full min-h-[220px]">
@@ -36,9 +42,9 @@ export default function AIActivity({ transactions = [], currency }) {
         {!hasActivity ? (
           <div className="border border-dashed border-border-light rounded-xl p-4 flex flex-col items-center justify-center text-center bg-bg-light/10 h-full">
             <Activity size={24} className="text-secondary-text/50 mb-2" />
-            <span className="text-navy-dark font-extrabold text-xs block mb-1">No AI recovery actions yet.</span>
+            <span className="text-navy-dark font-extrabold text-xs block mb-1">No recoveries yet.</span>
             <p className="text-secondary-text text-[11px] leading-normal max-w-xs">
-              AI activity will appear once transaction data is available.
+              AI recovery activity will appear once transactions are verified.
             </p>
           </div>
         ) : (
@@ -51,7 +57,7 @@ export default function AIActivity({ transactions = [], currency }) {
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-navy-dark">
-                      {formatCurrency(activity.amount, currency)} • {activity.title}
+                      {activity.title}
                     </span>
                     <span className="text-[10px] text-secondary-text font-medium">{activity.time}</span>
                   </div>

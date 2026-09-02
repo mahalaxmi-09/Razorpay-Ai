@@ -99,10 +99,13 @@ Safety Mandates:
       const userPrompt = `Analyze this transaction context:\n${JSON.stringify(safeInput, null, 2)}`;
 
       try {
-        const responseString = await openaiService.chatCompletion([
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ]);
+        const responseString = await openaiService.chatCompletion(
+          [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          { response_format: { type: 'json_object' } }
+        );
 
         if (responseString) {
           const rawParsed = JSON.parse(responseString);

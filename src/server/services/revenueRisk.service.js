@@ -6,6 +6,7 @@ import { notificationService } from './notification.service.js';
  * Revenue Risk & Case Processing Service
  * 
  * Ingests transactions, detects revenue-at-risk events, and aggregates dashboard metrics.
+ * The database is the single source of truth.
  */
 
 export const revenueRiskService = {
@@ -85,10 +86,10 @@ export const revenueRiskService = {
     try {
       const whereFilter = merchantId ? { merchantId } : {};
 
-      // 1. Total Transactions Count
+      // 1. Total Ingested Transactions
       const totalTransactions = await prisma.transaction.count({ where: whereFilter });
 
-      // 2. Calculate Revenue at Risk (sum of OPEN, MONITORING, ESCALATED risk events)
+      // 2. Revenue at Risk (SUM of unresolved risk events: OPEN, MONITORING, ESCALATED)
       const riskSum = await prisma.revenueRiskEvent.aggregate({
         _sum: { amountAtRisk: true },
         where: {
@@ -98,7 +99,7 @@ export const revenueRiskService = {
       });
       const revenueAtRisk = riskSum._sum.amountAtRisk !== null ? riskSum._sum.amountAtRisk / 100 : 0;
 
-      // 3. Calculate Recovered Revenue (sum of RESOLVED risk events)
+      // 3. Recovered Revenue (SUM of verified recovered amounts from confirmed RESOLVED risk events)
       const recoveredSum = await prisma.revenueRiskEvent.aggregate({
         _sum: { amountAtRisk: true },
         where: {
@@ -108,14 +109,30 @@ export const revenueRiskService = {
       });
       const recoveredRevenue = recoveredSum._sum.amountAtRisk !== null ? recoveredSum._sum.amountAtRisk / 100 : 0;
 
-      // 4. Count Active Cases
+      // 4. Active Cases Count (unresolved recovery cases)
       const activeCasesCount = await prisma.recoveryCase.count({
         where: {
           status: { in: ['OPEN', 'MONITORING', 'ESCALATED'] }
         }
       });
 
-      // 5. Settlement Issues & Failed Payments Counts
+      // 5. Verified Recovered Cases Count
+      const verifiedCasesCount = await prisma.recoveryCase.count({
+        where: {
+          status: { in: ['VERIFIED_RECOVERED', 'RECOVERED'] }
+        }
+      });
+
+      // 6. Total Cases
+      const totalCasesCount = await prisma.recoveryCase.count();
+
+      // 7. Recovery Rate: (Verified Recovered Cases / Total Cases) * 100
+      let recoveryRate = 0;
+      if (totalCasesCount > 0) {
+        recoveryRate = parseFloat(((verifiedCasesCount / totalCasesCount) * 100).toFixed(1));
+      }
+
+      // 8. Breakdown categories
       const settlementIssues = await prisma.transaction.count({
         where: {
           ...whereFilter,
@@ -141,21 +158,14 @@ export const revenueRiskService = {
         where: { status: 'ESCALATED' }
       });
 
-      // 6. Recovery Rate Calculation
-      let recoveryRate = 0;
-      const atRiskVal = revenueAtRisk || 0;
-      const recoveredVal = recoveredRevenue || 0;
-      const total = atRiskVal + recoveredVal;
-      if (total > 0) {
-        recoveryRate = parseFloat(((recoveredVal / total) * 100).toFixed(1));
-      }
-
       return {
         totalTransactions,
         revenueAtRisk,
         recoveredRevenue,
         activeCases: activeCasesCount,
         activeRecoveryCases: activeCasesCount,
+        verifiedCases: verifiedCasesCount,
+        totalCases: totalCasesCount,
         recoveryRate,
         pendingCases: pendingCasesCount,
         escalatedCases: escalatedCasesCount,
@@ -170,6 +180,8 @@ export const revenueRiskService = {
         recoveredRevenue: 0,
         activeCases: 0,
         activeRecoveryCases: 0,
+        verifiedCases: 0,
+        totalCases: 0,
         recoveryRate: 0,
         pendingCases: 0,
         escalatedCases: 0,
