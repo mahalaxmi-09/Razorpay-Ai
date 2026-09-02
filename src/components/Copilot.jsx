@@ -120,7 +120,7 @@ export default function Copilot({ isOpen, setIsOpen, lang = 'English' }) {
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 ${m.sender === 'bot' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-sky-blue text-navy-dark font-bold'}`}>
                 {m.sender === 'bot' ? <Bot size={14} /> : <User size={14} />}
               </div>
-              <div className={`p-3 rounded-xl text-xs leading-relaxed ${m.sender === 'bot' ? 'bg-bg-light text-navy-dark border border-border-light' : 'bg-primary text-white font-medium shadow-sm'}`}>
+              <div className={`p-3 rounded-xl text-xs leading-relaxed whitespace-pre-wrap ${m.sender === 'bot' ? 'bg-bg-light text-navy-dark border border-border-light' : 'bg-primary text-white font-medium shadow-sm'}`}>
                 {m.text}
               </div>
             </div>
