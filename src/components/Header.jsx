@@ -33,6 +33,9 @@ export default function Header({
         <h1 className="text-xl md:text-2xl font-extrabold text-navy-dark tracking-tight capitalize select-none leading-none">
           {pageTitle}
         </h1>
+        <span className="hidden sm:inline-block text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded">
+          Razorpay Test Mode
+        </span>
       </div>
 
       {/* Right: Actions and Dropdowns */}

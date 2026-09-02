@@ -15,12 +15,15 @@ export default function AIActivity({ transactions = [], currency }) {
 
   const hasActivity = transactions.length > 0;
 
-  // Render mock activities list only if data exists
-  const activities = hasActivity ? [
-    { id: 1, status: 'success', amount: 5000, title: '₹5,000 recovered', description: 'Settlement successfully processed', time: '2 min ago' },
-    { id: 2, status: 'warning', amount: 8000, title: '₹8,000 monitoring', description: 'Settlement verification in progress', time: '5 min ago' },
-    { id: 3, status: 'error', amount: 12000, title: '₹12,000 escalated', description: 'Recovery limit reached', time: '12 min ago' }
-  ] : [];
+  // Map activities dynamically from real database transactions
+  const activities = transactions.slice(0, 4).map(t => ({
+    id: t.id,
+    status: t.status === 'Recovered' ? 'success' : (t.status === 'Payment Failed' ? 'error' : 'warning'),
+    amount: t.amount,
+    title: t.status,
+    description: t.failureReason || (t.status === 'Recovered' ? 'Settlement verified and resolved' : (t.status === 'Settlement Pending' ? 'Settlement reconciliation in progress' : 'Monitored by recovery engine')),
+    time: t.date || 'Recently'
+  }));
 
   return (
     <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm flex flex-col h-full min-h-[220px]">
@@ -48,7 +51,7 @@ export default function AIActivity({ transactions = [], currency }) {
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-extrabold text-navy-dark">
-                      {formatCurrency(activity.amount, currency)} {activity.title.split(' ')[1]}
+                      {formatCurrency(activity.amount, currency)} • {activity.title}
                     </span>
                     <span className="text-[10px] text-secondary-text font-medium">{activity.time}</span>
                   </div>
