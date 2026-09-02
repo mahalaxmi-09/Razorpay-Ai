@@ -1,53 +1,80 @@
+import { razorpayService } from './razorpay.service.js';
+
 /**
  * Payment Provider Adapter Interface
  * 
- * Provides an abstract layer for payment integrations.
- * Future payment gateways (e.g. Razorpay, Stripe) will implement this interface.
- * Currently uses MockPaymentProvider for independent simulation.
+ * Defines standard contract for all payment providers.
+ * Core engine communicates exclusively via this abstraction.
  */
 
-export class MockPaymentProvider {
-  constructor(config = {}) {
-    this.name = 'MockPaymentProvider';
-    this.config = config;
+export class RazorpayTestProvider {
+  constructor() {
+    this.name = 'RAZORPAY_TEST';
   }
 
-  async fetchTransaction(externalTransactionId) {
+  async fetchPayment(paymentId) {
+    const raw = await razorpayService.fetchPayment(paymentId);
+    return razorpayService.normalizePayment(raw);
+  }
+
+  async fetchPayments(options = {}) {
+    const rawList = await razorpayService.fetchPayments(options);
+    const items = (rawList.items || []).map(r => razorpayService.normalizePayment(r));
     return {
-      provider: this.name,
-      externalTransactionId,
-      status: 'CAPTURED',
-      amount: 500000,
-      currency: 'INR',
-      customerDebited: true,
-      merchantSettlementStatus: 'PENDING',
-      timestamp: new Date().toISOString()
+      items,
+      count: rawList.count || items.length
     };
   }
 
-  async fetchTransactions(filter = {}) {
-    return {
-      provider: this.name,
-      transactions: [],
-      total: 0
-    };
+  async createOrder(orderData) {
+    return await razorpayService.createOrder(orderData);
   }
 
-  async getTransactionStatus(externalTransactionId) {
-    return {
-      externalTransactionId,
-      status: 'CAPTURED',
-      customerDebited: true
-    };
+  async capturePayment(paymentId, amount, currency) {
+    return await razorpayService.capturePayment(paymentId, amount, currency);
   }
 
-  async getSettlementStatus(externalTransactionId) {
-    return {
-      externalTransactionId,
-      merchantSettlementStatus: 'PENDING',
-      settlementUtr: null
-    };
+  async fetchSettlements(options = {}) {
+    return await razorpayService.fetchSettlements(options);
+  }
+
+  verifyWebhookSignature(rawBody, signature, secret) {
+    return razorpayService.verifyWebhookSignature(rawBody, signature, secret);
   }
 }
 
-export const paymentProviderService = new MockPaymentProvider();
+export class PaymentProviderService {
+  constructor(provider = new RazorpayTestProvider()) {
+    this.provider = provider;
+  }
+
+  setProvider(provider) {
+    this.provider = provider;
+  }
+
+  async fetchPayment(id) {
+    return await this.provider.fetchPayment(id);
+  }
+
+  async fetchPayments(options) {
+    return await this.provider.fetchPayments(options);
+  }
+
+  async createOrder(data) {
+    return await this.provider.createOrder(data);
+  }
+
+  async capturePayment(id, amount, currency) {
+    return await this.provider.capturePayment(id, amount, currency);
+  }
+
+  async fetchSettlements(options) {
+    return await this.provider.fetchSettlements(options);
+  }
+
+  verifyWebhookSignature(rawBody, signature, secret) {
+    return this.provider.verifyWebhookSignature(rawBody, signature, secret);
+  }
+}
+
+export const paymentProviderService = new PaymentProviderService(new RazorpayTestProvider());
