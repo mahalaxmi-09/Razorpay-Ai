@@ -1,11 +1,16 @@
 import React from 'react';
 import { AlertCircle, ArrowUpRight, Inbox } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
+import { DATA_MODE, dashboardDemoData } from '../data/demoData';
 
 export default function PriorityCases({ transactions = [], currency, onNavigate }) {
+  const isDemo = DATA_MODE === 'demo';
+  const liveCases = transactions.filter(t => t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL' || t.risk === 'Medium' || t.riskStatus === 'MEDIUM');
   
-  // Filter cases from active transaction state
-  const priorityItems = transactions.filter(t => t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL' || t.risk === 'Medium' || t.riskStatus === 'MEDIUM');
+  const priorityItems = liveCases.length > 0 
+    ? liveCases 
+    : (isDemo ? dashboardDemoData.priorityCases : []);
+
   const hasCases = priorityItems.length > 0;
 
   return (
@@ -61,10 +66,10 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                     </div>
 
                     <button 
-                      onClick={() => onNavigate(`#/payments/${c.id}`)}
-                      className="w-full py-2 bg-primary text-white hover:bg-primary/95 font-bold rounded-lg text-xs transition duration-150 flex items-center justify-center gap-1 shadow-sm shadow-primary/25 cursor-pointer"
+                      onClick={() => onNavigate('#/recovery')} 
+                      className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-xs shadow-sm transition flex items-center justify-center gap-1 cursor-pointer"
                     >
-                      <span>Investigate</span>
+                      <span>Trigger Autonomous Recovery</span>
                       <ArrowUpRight size={14} />
                     </button>
                   </div>
@@ -72,20 +77,14 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
               }
 
               return (
-                <div 
-                  key={c.id} 
-                  onClick={() => onNavigate(`#/payments/${c.id}`)}
-                  className="p-3 border border-border-light hover:border-primary/30 rounded-lg flex items-center justify-between cursor-pointer transition bg-bg-light/20 hover:bg-bg-light/60"
-                >
-                  <div>
-                    <span className="text-xs text-secondary-text block mb-0.5 truncate max-w-[150px]" title={c.status}>
-                      {c.status || 'Settlement pending'}
-                    </span>
-                    <span className="text-sm font-bold text-navy-dark">{formatCurrency(c.amount, currency)}</span>
+                <div key={c.id} className="flex items-center justify-between text-xs py-2 border-b border-border-light/40 last:border-0 hover:bg-bg-light/30 px-2 rounded-lg -mx-2 transition">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-navy-dark block">{c.customerName || c.id}</span>
+                    <span className="text-[11px] text-secondary-text">{c.failureReason || c.status}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] block font-semibold text-secondary-text">AI Confidence</span>
-                    <span className="text-xs font-bold text-navy-dark">{c.aiConfidence || '91%'}</span>
+                    <span className="font-extrabold text-navy-dark block">{formatCurrency(c.amount, currency)}</span>
+                    <span className="text-[10px] text-warning-amber font-bold">{c.risk || c.riskStatus}</span>
                   </div>
                 </div>
               );

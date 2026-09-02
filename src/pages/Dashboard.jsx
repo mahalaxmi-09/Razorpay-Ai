@@ -5,6 +5,7 @@ import AIActivity from '../components/AIActivity';
 import PriorityCases from '../components/PriorityCases';
 import AIInsight from '../components/AIInsight';
 import { translations } from '../services/mockData';
+import { DATA_MODE, dashboardDemoData } from '../data/demoData';
 import { api } from '../lib/api';
 
 export default function Dashboard({ lang, currency, merchantName, onNavigate, transactions = [] }) {
@@ -13,8 +14,9 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
     userName: null,
     revenueAtRisk: null,
     recoveredRevenue: null,
-    activeCases: 0,
-    recoveryRate: null
+    activeCases: null,
+    recoveryRate: null,
+    totalTransactions: null
   });
 
   // Fetch summary aggregates and database user name from backend API
@@ -39,21 +41,18 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
     const displayName = summary.userName || summary.merchantName || merchantName || 'User';
 
     if (hour < 12) {
-      // 12:00 AM to 11:59 AM
       switch (lang) {
         case 'తెలుగు': return `శుభోదయం, ${displayName} 👋`;
         case 'हिंदी': return `सुप्रभात, ${displayName} 👋`;
         default: return `Good morning, ${displayName} 👋`;
       }
     } else if (hour < 17) {
-      // 12:00 PM to 5:00 PM
       switch (lang) {
         case 'తెలుగు': return `శుభ మధ్యాహ్నం, ${displayName} 👋`;
         case 'हिंदी': return `शुभ दोपहर, ${displayName} 👋`;
         default: return `Good afternoon, ${displayName} 👋`;
       }
     } else {
-      // After 5:00 PM to 11:59 PM
       switch (lang) {
         case 'తెలుగు': return `శుభ సాయంత్రం, ${displayName} 👋`;
         case 'हिंदी': return `शुभ संध्या, ${displayName} 👋`;
@@ -70,21 +69,44 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
     }
   };
 
-  const totalRisk = summary.revenueAtRisk;
-  const totalRecovered = summary.recoveredRevenue;
-  const activeCasesCount = summary.activeCases;
-  const recoveryRate = summary.recoveryRate;
+  // Determine active values based on DATA_MODE ('demo' vs 'live')
+  const isDemo = DATA_MODE === 'demo';
+
+  const totalRisk = isDemo
+    ? (summary.revenueAtRisk !== null && summary.revenueAtRisk !== undefined ? summary.revenueAtRisk : dashboardDemoData.revenueAtRisk)
+    : summary.revenueAtRisk;
+
+  const totalRecovered = isDemo
+    ? (summary.recoveredRevenue !== null && summary.recoveredRevenue !== undefined ? summary.recoveredRevenue : dashboardDemoData.recoveredRevenue)
+    : summary.recoveredRevenue;
+
+  const activeCasesCount = isDemo
+    ? (summary.activeCases !== null && summary.activeCases !== undefined ? summary.activeCases : dashboardDemoData.activeCases)
+    : summary.activeCases;
+
+  const recoveryRate = isDemo
+    ? (summary.recoveryRate !== null && summary.recoveryRate !== undefined ? summary.recoveryRate : dashboardDemoData.recoveryRate)
+    : summary.recoveryRate;
 
   return (
     <div className="space-y-6">
       {/* Welcome Greeting */}
-      <div>
-        <h2 className="text-xl md:text-2xl font-black text-navy-dark leading-tight select-none">
-          {getGreeting()}
-        </h2>
-        <p className="text-xs md:text-sm text-secondary-text mt-1">
-          {getSubtitle()}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xl md:text-2xl font-black text-navy-dark leading-tight select-none">
+            {getGreeting()}
+          </h2>
+          <p className="text-xs md:text-sm text-secondary-text mt-1">
+            {getSubtitle()}
+          </p>
+        </div>
+        {isDemo && (
+          <div className="self-start sm:self-auto">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded">
+              Demo Data Mode
+            </span>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards Grid */}
@@ -142,7 +164,12 @@ export default function Dashboard({ lang, currency, merchantName, onNavigate, tr
         {/* Short summary table or quick settings info */}
         <div className="lg:col-span-2 bg-card-bg p-6 rounded-xl border border-border-light shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="text-base font-bold text-navy-dark mb-2">Automated Guardrails Status</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-base font-bold text-navy-dark">Automated Guardrails Status</h3>
+              <span className="text-[11px] font-bold text-secondary-text">
+                {isDemo ? `${dashboardDemoData.transactionsMonitored} Monitored` : 'Active Monitoring'}
+              </span>
+            </div>
             <p className="text-xs text-secondary-text mb-4">Safety checks active for all payment retry workflows.</p>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

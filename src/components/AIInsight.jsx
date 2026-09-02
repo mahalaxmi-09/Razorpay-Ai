@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Sparkles, ChevronRight, ChevronLeft, Lightbulb } from 'lucide-react';
+import { DATA_MODE, dashboardDemoData } from '../data/demoData';
 
 export default function AIInsight({ transactions = [], onNavigate }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const isDemo = DATA_MODE === 'demo';
   const hasTransactions = transactions && transactions.length > 0;
 
-  // Generate dynamic insights strictly derived from actual database transactions
+  // Generate dynamic insights derived from live transactions or controlled demo data
   const insights = [];
 
   if (hasTransactions) {
@@ -54,6 +56,30 @@ export default function AIInsight({ transactions = [], onNavigate }) {
         route: '#/payments'
       });
     }
+  } else if (isDemo) {
+    insights.push(
+      {
+        id: 'demo-1',
+        text: `${dashboardDemoData.activeCases} recovery cases active (₹${dashboardDemoData.revenueAtRisk.toLocaleString('en-IN')} at risk). Automated recovery workflows monitoring telemetry.`,
+        type: 'warning',
+        actionable: 'View recovery pipeline',
+        route: '#/recovery'
+      },
+      {
+        id: 'demo-2',
+        text: `${dashboardDemoData.transactionsAnalyzed} transactions analyzed (+${dashboardDemoData.revenueRiskIncrease}% risk increase). Guardrails holding high-value retry.`,
+        type: 'info',
+        actionable: 'View affected transactions',
+        route: '#/payments'
+      },
+      {
+        id: 'demo-3',
+        text: `₹${dashboardDemoData.recovered.toLocaleString('en-IN')} in payment recoveries verified successfully in Test Mode.`,
+        type: 'success',
+        actionable: 'View analytics logs',
+        route: '#/analytics'
+      }
+    );
   }
 
   const hasInsights = insights.length > 0;
@@ -68,75 +94,107 @@ export default function AIInsight({ transactions = [], onNavigate }) {
   };
 
   const handleAction = () => {
-    if (!currentInsight || !onNavigate) return;
-    onNavigate(currentInsight.route || '#/payments');
+    if (currentInsight && currentInsight.route) {
+      onNavigate(currentInsight.route);
+    }
   };
 
-  const getBorderColor = (type) => {
-    if (!hasInsights) return 'border-border-light bg-card-bg';
-    if (type === 'warning') return 'border-warning-amber/40 bg-warning-amber/[0.02]';
-    if (type === 'success') return 'border-success-green/40 bg-success-green/[0.02]';
-    return 'border-primary/40 bg-primary/[0.02]';
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case 'warning':
+        return {
+          bg: 'bg-warning-amber/[0.04]',
+          border: 'border-warning-amber/20',
+          indicator: 'bg-warning-amber',
+          badgeText: 'text-warning-amber',
+          badgeBg: 'bg-warning-amber/10'
+        };
+      case 'success':
+        return {
+          bg: 'bg-success-green/[0.04]',
+          border: 'border-success-green/20',
+          indicator: 'bg-success-green',
+          badgeText: 'text-success-green',
+          badgeBg: 'bg-success-green/10'
+        };
+      default:
+        return {
+          bg: 'bg-primary/[0.04]',
+          border: 'border-primary/20',
+          indicator: 'bg-primary',
+          badgeText: 'text-primary',
+          badgeBg: 'bg-primary/10'
+        };
+    }
   };
+
+  const styles = currentInsight ? getTypeStyles(currentInsight.type) : getTypeStyles('info');
 
   return (
-    <div className={`p-6 rounded-xl border transition-all duration-300 ${getBorderColor(currentInsight?.type)} flex flex-col justify-between min-h-[140px] h-full`}>
-      {!hasInsights ? (
-        <div className="flex flex-col items-center justify-center text-center h-full gap-2 py-2">
-          <div className="flex items-center gap-1.5 justify-center">
-            <Lightbulb size={16} className="text-secondary-text/60 animate-pulse" />
-            <span className="text-navy-dark font-extrabold text-xs block">No AI insights available yet.</span>
+    <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm flex flex-col justify-between min-h-[160px]">
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={16} className="text-primary" />
+            <h3 className="text-xs font-bold text-navy-dark uppercase tracking-wider">
+              AI Insight
+            </h3>
           </div>
-          <p className="text-secondary-text text-[11px] leading-normal max-w-xs">
-            Insights will appear dynamically as transaction records enter the system.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-                  <Sparkles size={14} />
-                </div>
-                <span className="text-xs font-bold text-navy-dark uppercase tracking-wider">AI Insight</span>
-              </div>
-              
-              {/* Pagers */}
+          {hasInsights && (
+            <div className="flex items-center gap-1">
+              <span className={`text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded ${styles.badgeBg} ${styles.badgeText}`}>
+                {currentInsight.type}
+              </span>
               {insights.length > 1 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center ml-2">
                   <button 
                     onClick={prevInsight}
-                    className="p-1 hover:bg-bg-light border border-border-light rounded text-secondary-text cursor-pointer"
+                    className="p-0.5 text-secondary-text hover:text-navy-dark rounded transition cursor-pointer"
                   >
-                    <ChevronLeft size={12} />
+                    <ChevronLeft size={14} />
                   </button>
-                  <span className="text-[10px] text-secondary-text font-bold px-1 select-none">
-                    {(activeIndex % insights.length) + 1}/{insights.length}
+                  <span className="text-[10px] text-secondary-text font-bold px-1">
+                    {activeIndex + 1}/{insights.length}
                   </span>
                   <button 
                     onClick={nextInsight}
-                    className="p-1 hover:bg-bg-light border border-border-light rounded text-secondary-text cursor-pointer"
+                    className="p-0.5 text-secondary-text hover:text-navy-dark rounded transition cursor-pointer"
                   >
-                    <ChevronRight size={12} />
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               )}
             </div>
+          )}
+        </div>
 
-            <p className="text-sm font-semibold text-navy-dark leading-relaxed mb-4">
-              "{currentInsight.text}"
+        {!hasInsights ? (
+          <div className="flex items-center gap-3 py-2 text-secondary-text">
+            <Lightbulb size={20} className="text-secondary-text/50 shrink-0" />
+            <p className="text-xs font-medium">
+              No new AI insights available at this moment.
             </p>
           </div>
+        ) : (
+          <div className={`p-3.5 rounded-lg border ${styles.bg} ${styles.border} transition-all duration-200`}>
+            <p className="text-xs font-semibold text-navy-dark leading-relaxed">
+              {currentInsight.text}
+            </p>
+          </div>
+        )}
+      </div>
 
+      {hasInsights && currentInsight.actionable && (
+        <div className="mt-3 pt-3 border-t border-border-light/60 flex justify-between items-center">
+          <span className="text-[10px] text-secondary-text font-medium">Grounded recommendation</span>
           <button
             onClick={handleAction}
-            className="self-start text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer transition"
+            className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
           >
             <span>{currentInsight.actionable}</span>
             <ChevronRight size={14} />
           </button>
-        </>
+        </div>
       )}
     </div>
   );
