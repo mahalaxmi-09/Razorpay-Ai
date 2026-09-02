@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/loginAnimation.css';
-import { Sparkles, User, Building, Mail, Eye, EyeOff, ClipboardCheck } from 'lucide-react';
+import { Sparkles, User, Building, Mail, Eye, EyeOff } from 'lucide-react';
 
 export default function Signup({ onLogin, onNavigate }) {
   const [fullName, setFullName] = useState('');
@@ -18,14 +18,14 @@ export default function Signup({ onLogin, onNavigate }) {
 
   // Rotating circle active indicator index
   const [activeBar, setActiveBar] = useState(0);
-  const numBars = 50;
+  const numBars = 48;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBar((prev) => (prev + 1) % numBars);
-    }, 100);
+    }, 80);
     return () => clearInterval(timer);
-  }, []);
+  }, [numBars]);
 
   const isBarActive = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
@@ -96,7 +96,7 @@ export default function Signup({ onLogin, onNavigate }) {
       
       setTimeout(() => {
         setIsSubmitting(false);
-        onLogin(fullName); // login user session
+        onLogin(fullName || merchantName || 'User'); // login user session
       }, 800);
     }, 1000);
   };
@@ -104,17 +104,18 @@ export default function Signup({ onLogin, onNavigate }) {
   return (
     <div className="login-page-wrapper">
       <div className="login-container">
-        
-        {/* Rotating circle animation radar line */}
+        {/* Rotating circle animation containing the vertical ₹ currency symbols */}
         <div className="circle-container">
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`bar ${isBarActive(idx) ? 'active' : ''}`}
+              className={`currency-tick ${isBarActive(idx) ? 'active' : ''}`}
               style={{
-                transform: `rotate(${(360 / numBars) * idx}deg) translateY(-170px)`
+                transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius-signup)))`
               }}
-            />
+            >
+              ₹
+            </div>
           ))}
         </div>
 
@@ -123,7 +124,7 @@ export default function Signup({ onLogin, onNavigate }) {
           <div className="brand-logo-header">
             {/* Monogram Monotone Logo */}
             <svg width="32" height="32" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M46,40 L72,64 L64,64 L40,40 L46,40 Z" fill="#0096FF" />
+              <path d="M46,40 L72,64 L64,64 L40,40 Z" fill="#0096FF" />
               <path d="M72,20 L44,64 L52,64 L78,20 H72 Z" fill="#A6DBFF" />
             </svg>
             <h2>RazorRecover AI</h2>
@@ -138,51 +139,49 @@ export default function Signup({ onLogin, onNavigate }) {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-3 mb-1">
-              <div className="input-group">
-                <label htmlFor="fullName">Full Name</label>
-                <input
-                  type="text"
-                  id="fullName"
-                  required
-                  value={fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  placeholder="Mounika"
-                  className={errors.fullName ? 'invalid-field' : ''}
-                />
-                <span className="input-icon" style={{ right: '12px' }}>
-                  <User size={13} />
-                </span>
-                {errors.fullName && <span className="validation-message">{errors.fullName}</span>}
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="merchantName">Business Name</label>
-                <input
-                  type="text"
-                  id="merchantName"
-                  required
-                  value={merchantName}
-                  onChange={(e) => handleInputChange('merchantName', e.target.value)}
-                  placeholder="Mounika Ltd"
-                  className={errors.merchantName ? 'invalid-field' : ''}
-                />
-                <span className="input-icon" style={{ right: '12px' }}>
-                  <Building size={13} />
-                </span>
-                {errors.merchantName && <span className="validation-message">{errors.merchantName}</span>}
-              </div>
+            <div className="input-group">
+              <label htmlFor="fullName">Full Name</label>
+              <input
+                type="text"
+                id="fullName"
+                required
+                value={fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                placeholder="Mounika"
+                className={errors.fullName ? 'invalid-field' : ''}
+              />
+              <span className="input-icon">
+                <User size={15} />
+              </span>
+              {errors.fullName && <span className="validation-message">{errors.fullName}</span>}
             </div>
 
             <div className="input-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="merchantName">Business / Merchant Name</label>
+              <input
+                type="text"
+                id="merchantName"
+                required
+                value={merchantName}
+                onChange={(e) => handleInputChange('merchantName', e.target.value)}
+                placeholder="Acme Payments Pvt Ltd"
+                className={errors.merchantName ? 'invalid-field' : ''}
+              />
+              <span className="input-icon">
+                <Building size={15} />
+              </span>
+              {errors.merchantName && <span className="validation-message">{errors.merchantName}</span>}
+            </div>
+
+            <div className="input-group">
+              <label htmlFor="email">Work Email</label>
               <input
                 type="email"
                 id="email"
                 required
                 value={email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="mounika@razorrecover.ai"
+                placeholder="mounika@company.com"
                 className={errors.email ? 'invalid-field' : ''}
               />
               <span className="input-icon">
@@ -191,56 +190,50 @@ export default function Signup({ onLogin, onNavigate }) {
               {errors.email && <span className="validation-message">{errors.email}</span>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-1">
-              <div className="input-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  required
-                  value={password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  placeholder="••••••••"
-                  className={errors.password ? 'invalid-field' : ''}
-                />
-                <span className="input-icon" style={{ right: '12px' }}>
-                  <Eye size={13} className="opacity-0" />
-                </span>
-                {errors.password && <span className="validation-message">{errors.password}</span>}
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  placeholder="••••••••"
-                  className={errors.confirmPassword ? 'invalid-field' : ''}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="input-icon password-toggle"
-                  style={{ right: '12px', bottom: '8px' }}
-                  title="Show/Hide password"
-                >
-                  {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                </button>
-                {errors.confirmPassword && <span className="validation-message">{errors.confirmPassword}</span>}
-              </div>
+            <div className="input-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                required
+                value={password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="••••••••"
+                className={errors.password ? 'invalid-field' : ''}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="input-icon password-toggle"
+                title="Show/Hide password"
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+              {errors.password && <span className="validation-message">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="login-btn mt-3" disabled={isSubmitting}>
-              <span>{isSubmitting ? 'CREATING...' : 'CREATE ACCOUNT'}</span>
+            <div className="input-group">
+              <label htmlFor="confirmPassword">Confirm Password</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                required
+                value={confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                placeholder="••••••••"
+                className={errors.confirmPassword ? 'invalid-field' : ''}
+              />
+              {errors.confirmPassword && <span className="validation-message">{errors.confirmPassword}</span>}
+            </div>
+
+            <button type="submit" className="login-btn" disabled={isSubmitting}>
+              <span>{isSubmitting ? 'CREATING ACCOUNT...' : 'GET STARTED'}</span>
               {!isSubmitting && <Sparkles size={14} />}
             </button>
           </form>
 
-          {/* Navigation link back to login page */}
-          <div className="mt-4 text-center text-xs text-[#94A3B8] font-semibold">
+          {/* Navigation link to sign in */}
+          <div className="mt-5 text-center text-xs text-[#94A3B8] font-semibold">
             Already have an account?{' '}
             <a 
               href="#/login" 

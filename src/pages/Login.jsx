@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/loginAnimation.css';
-import { Sparkles, Mail, Eye, EyeOff, ClipboardCheck } from 'lucide-react';
+import { Sparkles, Mail, Eye, EyeOff } from 'lucide-react';
 
 export default function Login({ onLogin, onNavigate }) {
   const [email, setEmail] = useState('mounika@razorrecover.ai');
@@ -14,19 +14,19 @@ export default function Login({ onLogin, onNavigate }) {
 
   // Rotating circle active indicator index
   const [activeBar, setActiveBar] = useState(0);
-  const numBars = 50;
+  const numBars = 48;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveBar((prev) => (prev + 1) % numBars);
-    }, 100);
+    }, 80);
     return () => clearInterval(timer);
-  }, []);
+  }, [numBars]);
 
-  // Determine if a segment bar is within the active radar sweep trail
+  // Determine if a segment is within the active radar sweep trail
   const isBarActive = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    return diff >= 0 && diff < 8; // Creates an 8-bar fading glow segment trail
+    return diff >= 0 && diff < 8; // Creates an 8-segment fading glow sweep trail
   };
 
   const handleEmailChange = (e) => {
@@ -92,17 +92,18 @@ export default function Login({ onLogin, onNavigate }) {
   return (
     <div className="login-page-wrapper">
       <div className="login-container">
-        
-        {/* Rotating circle animation containing the radar segments */}
+        {/* Rotating circle animation containing the vertical ₹ currency symbols */}
         <div className="circle-container">
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`bar ${isBarActive(idx) ? 'active' : ''}`}
+              className={`currency-tick ${isBarActive(idx) ? 'active' : ''}`}
               style={{
-                transform: `rotate(${(360 / numBars) * idx}deg) translateY(-170px)`
+                transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius)))`
               }}
-            />
+            >
+              ₹
+            </div>
           ))}
         </div>
 
