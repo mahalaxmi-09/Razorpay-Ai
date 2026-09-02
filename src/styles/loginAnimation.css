@@ -59,23 +59,26 @@
   z-index: 1;
 }
 
-/* Big Glowing Radar Indicator Lights (Pill Shape) */
-.radar-light {
+/* Vertically / Radially Oriented Rupee (₹) Radar Symbols */
+.rupee-tick {
   position: absolute;
-  width: 7px;
-  height: 28px;
-  background: rgba(0, 150, 255, 0.13); /* Subtle transparent blue */
-  border-radius: 4px;
+  font-size: 21px;
+  font-weight: 900;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: rgba(0, 150, 255, 0.16); /* Subtle transparent blue */
   transform-origin: center center;
-  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+  transition: color 0.12s ease, text-shadow 0.12s ease, transform 0.12s ease;
   user-select: none;
+  display: inline-block;
+  text-align: center;
+  line-height: 1;
 }
 
-/* Active glowing radar light segment (bright neon blue to white tip glow) */
-.radar-light.active {
-  background: linear-gradient(180deg, #FFFFFF 0%, #0096FF 100%);
-  box-shadow: 0 0 16px rgba(0, 150, 255, 1), 0 0 32px rgba(0, 150, 255, 0.75), 0 0 8px #FFFFFF;
-  transform: scale(1.25) !important;
+/* Active glowing Rupee (₹) radar segment (bright neon blue to white glow) */
+.rupee-tick.active {
+  color: #FFFFFF;
+  text-shadow: 0 0 16px #0096FF, 0 0 32px rgba(0, 150, 255, 1), 0 0 8px #A6DBFF;
+  transform: scale(1.3) !important;
 }
 
 /* Login Box Card Wrapper (Sitting completely inside the big circle) */

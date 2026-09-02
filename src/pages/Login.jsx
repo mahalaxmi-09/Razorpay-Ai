@@ -14,7 +14,7 @@ export default function Login({ onLogin, onNavigate }) {
 
   // Rotating circle active indicator index
   const [activeBar, setActiveBar] = useState(0);
-  const numBars = 52;
+  const numBars = 48;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -26,7 +26,7 @@ export default function Login({ onLogin, onNavigate }) {
   // Determine if a segment is within the active radar sweep trail
   const isBarActive = (idx) => {
     const diff = (activeBar - idx + numBars) % numBars;
-    return diff >= 0 && diff < 9; // 9-segment luminous glow sweep trail
+    return diff >= 0 && diff < 8; // 8-segment luminous glow sweep trail
   };
 
   const handleEmailChange = (e) => {
@@ -92,16 +92,18 @@ export default function Login({ onLogin, onNavigate }) {
   return (
     <div className="login-page-wrapper">
       <div className="login-container">
-        {/* Large outer circular radar animation enclosing the card */}
+        {/* Large outer circular radar animation with glowing ₹ symbols enclosing the card */}
         <div className="circle-container">
           {Array.from({ length: numBars }).map((_, idx) => (
             <div
               key={idx}
-              className={`radar-light ${isBarActive(idx) ? 'active' : ''}`}
+              className={`rupee-tick ${isBarActive(idx) ? 'active' : ''}`}
               style={{
                 transform: `rotate(${(360 / numBars) * idx}deg) translateY(calc(-1 * var(--radar-radius)))`
               }}
-            />
+            >
+              ₹
+            </div>
           ))}
         </div>
 
@@ -110,7 +112,7 @@ export default function Login({ onLogin, onNavigate }) {
           <div className="brand-logo-header">
             {/* Monogram Monotone Logo */}
             <svg width="36" height="36" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M46,40 L72,64 L64,64 L40,40 L46,40 Z" fill="#0096FF" />
+              <path d="M46,40 L72,64 L64,64 L40,40 Z" fill="#0096FF" />
               <path d="M72,20 L44,64 L52,64 L78,20 H72 Z" fill="#A6DBFF" />
             </svg>
             <h2>RazorRecover AI</h2>
