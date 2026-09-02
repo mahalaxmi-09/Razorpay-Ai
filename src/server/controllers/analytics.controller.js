@@ -18,7 +18,7 @@ export const analyticsController = {
             recoveredRevenue: 0
           };
         }
-        if (event.status === 'OPEN') {
+        if (['OPEN', 'MONITORING', 'ESCALATED'].includes(event.status)) {
           dateAggregates[dateStr].revenueAtRisk += event.amountAtRisk / 100;
         } else if (event.status === 'RESOLVED') {
           dateAggregates[dateStr].recoveredRevenue += event.amountAtRisk / 100;

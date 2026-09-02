@@ -1,6 +1,5 @@
 import React from 'react';
 import PaymentTable from '../components/PaymentTable';
-import { mockTransactions } from '../services/mockData';
 
 export default function Payments({ currency, onNavigate, transactions = [] }) {
   const handleSelectTransaction = (id) => {

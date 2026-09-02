@@ -5,7 +5,7 @@ import { formatCurrency } from '../services/mockData';
 export default function PriorityCases({ transactions = [], currency, onNavigate }) {
   
   // Filter cases from active transaction state
-  const priorityItems = transactions.filter(t => t.risk === 'High' || t.risk === 'Medium');
+  const priorityItems = transactions.filter(t => t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL' || t.risk === 'Medium' || t.riskStatus === 'MEDIUM');
   const hasCases = priorityItems.length > 0;
 
   return (
@@ -25,12 +25,12 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
             <Inbox size={24} className="text-secondary-text/50 mb-2" />
             <span className="text-navy-dark font-extrabold text-xs block mb-1">No priority cases yet.</span>
             <p className="text-secondary-text text-[11px] leading-normal max-w-xs">
-              Recovery cases will appear here when transaction data is connected.
+              Priority cases will appear here when risk events are detected.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {priorityItems.map((c, index) => {
+            {priorityItems.slice(0, 3).map((c, index) => {
               const isHigh = index === 0;
 
               if (isHigh) {
@@ -54,7 +54,9 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                       </div>
                       <div className="flex justify-between py-1">
                         <span>Issue:</span>
-                        <span className="font-bold text-error-red">Merchant settlement missing</span>
+                        <span className="font-bold text-error-red truncate max-w-[200px]" title={c.failureReason || c.status}>
+                          {c.failureReason || (c.merchantSettlementStatus === 'PENDING' ? 'Merchant settlement pending' : 'Risk action required')}
+                        </span>
                       </div>
                     </div>
 
@@ -76,7 +78,9 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                   className="p-3 border border-border-light hover:border-primary/30 rounded-lg flex items-center justify-between cursor-pointer transition bg-bg-light/20 hover:bg-bg-light/60"
                 >
                   <div>
-                    <span className="text-xs text-secondary-text block mb-0.5">Settlement pending</span>
+                    <span className="text-xs text-secondary-text block mb-0.5 truncate max-w-[150px]" title={c.status}>
+                      {c.status || 'Settlement pending'}
+                    </span>
                     <span className="text-sm font-bold text-navy-dark">{formatCurrency(c.amount, currency)}</span>
                   </div>
                   <div className="text-right">

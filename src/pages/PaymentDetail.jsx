@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Sparkles, ClipboardList, ShieldCheck, CheckCircle2, Play } from 'lucide-react';
-import { mockTransactions, formatCurrency } from '../services/mockData';
+import { formatCurrency } from '../services/mockData';
 import StatusBadge from '../components/StatusBadge';
 
 import { api } from '../lib/api';

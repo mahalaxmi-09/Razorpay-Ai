@@ -12,7 +12,7 @@ import {
   X
 } from 'lucide-react';
 
-export default function Sidebar({ currentPath, onNavigate, lang, translations, isOpen, setIsOpen }) {
+export default function Sidebar({ currentPath, onNavigate, lang, translations, isOpen, setIsOpen, transactionsCount = 0 }) {
   const menuItems = [
     { name: translations[lang]?.dashboard || 'Dashboard', path: '#/dashboard', icon: LayoutDashboard },
     { name: translations[lang]?.payments || 'Payments', path: '#/payments', icon: CreditCard },
@@ -42,45 +42,48 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
         />
       )}
 
-      {/* Sidebar Panel */}
+      {/* Main Sidebar Component */}
       <aside className={`
-        fixed inset-y-0 left-0 bg-card-bg border-r border-border-light flex flex-col justify-between z-50
-        transition-all duration-300 w-64 lg:static lg:flex
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        fixed lg:static top-0 bottom-0 left-0 z-50
+        w-64 bg-card-bg border-r border-border-light flex flex-col justify-between p-4 transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Logo and Branding */}
-        <div>
-          <div className="p-6 border-b border-border-light flex items-center justify-between">
+        {/* Top: Logo & Main Navigation */}
+        <div className="space-y-6">
+          
+          {/* Brand Header */}
+          <div className="flex items-center justify-between px-2 pt-2">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleLinkClick('#/dashboard')}>
-              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                ↗
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-primary/30">
+                RR
               </div>
-              <div>
-                <span className="font-extrabold text-navy-dark text-lg block leading-none">RazorRecover</span>
-                <span className="text-xs text-primary font-bold tracking-wider uppercase">AI</span>
+              <div className="leading-tight">
+                <span className="block font-black text-navy-dark text-base tracking-tight">RazorRecover</span>
+                <span className="block text-[10px] text-primary font-bold uppercase tracking-widest -mt-0.5">Autonomous AI</span>
               </div>
             </div>
-            {/* Mobile Close Button */}
+
+            {/* Mobile close button */}
             <button 
               onClick={() => setIsOpen(false)}
-              className="lg:hidden p-1 text-secondary-text hover:text-navy-dark hover:bg-bg-light rounded"
+              className="lg:hidden p-1.5 text-secondary-text hover:text-navy-dark rounded-md"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
+          {/* Primary Navigation Links */}
+          <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              // Check if active: path matches or starts with path (e.g. #/payments and #/payments/TXN_123)
-              const isActive = currentPath === item.path || (item.path !== '#/dashboard' && currentPath.startsWith(item.path));
+              const isActive = currentPath === item.path;
+
               return (
                 <button
                   key={item.path}
                   onClick={() => handleLinkClick(item.path)}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer
                     ${isActive 
                       ? 'bg-primary text-white shadow-md shadow-primary/20' 
                       : 'text-secondary-text hover:text-navy-dark hover:bg-bg-light'
@@ -95,18 +98,19 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
           </nav>
         </div>
 
-        {/* Bottom Menu Items */}
-        <div className="p-4 border-t border-border-light">
+        {/* Bottom Section: Settings, Help, AI Badge */}
+        <div className="space-y-4 pt-4 border-t border-border-light">
           <div className="space-y-1">
             {bottomItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentPath === item.path;
+
               return (
                 <button
                   key={item.path}
                   onClick={() => handleLinkClick(item.path)}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200
+                    w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition duration-150 cursor-pointer
                     ${isActive 
                       ? 'bg-primary text-white shadow-md shadow-primary/20' 
                       : 'text-secondary-text hover:text-navy-dark hover:bg-bg-light'
@@ -122,10 +126,14 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
           
           <div className="mt-4 p-3 bg-bg-light border border-border-light rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
+              <span className={`w-2 h-2 rounded-full ${transactionsCount > 0 ? 'bg-success-green animate-pulse' : 'bg-secondary-text'}`}></span>
               <span className="text-[10px] font-bold text-navy-dark uppercase tracking-wider">AI Recovery Active</span>
             </div>
-            <p className="text-[11px] text-secondary-text">Monitoring 124 transactions for risk factors.</p>
+            <p className="text-[11px] text-secondary-text">
+              {transactionsCount > 0 
+                ? `Monitoring ${transactionsCount} transaction${transactionsCount > 1 ? 's' : ''} for risk factors.`
+                : 'No transaction data connected.'}
+            </p>
           </div>
         </div>
       </aside>

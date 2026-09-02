@@ -2,17 +2,18 @@ import React from 'react';
 import { TrendingUp, AlertCircle, RefreshCw, BarChart2 } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
 
-export default function KPICard({ title, value, type, isPercentage = false, currency }) {
+export default function KPICard({ title, value, type, isPercentage = false, isCount = false, currency }) {
   
   const getEmptyStateDetails = (title) => {
     const t = title.toLowerCase();
     if (t.includes('risk')) return { value: '—', subtext: 'No live data yet' };
     if (t.includes('recovered')) return { value: '—', subtext: 'Connect payment data' };
-    if (t.includes('active')) return { value: '—', subtext: 'No live cases' };
+    if (t.includes('active') || t.includes('case')) return { value: '—', subtext: 'No live cases' };
     if (t.includes('rate')) return { value: '—', subtext: 'Awaiting transaction data' };
     return { value: '—', subtext: '' };
   };
 
+  const isCaseCount = isCount || title.toLowerCase().includes('case');
   const isEmpty = value === null || value === undefined;
   const emptyDetails = isEmpty ? getEmptyStateDetails(title) : null;
 
@@ -21,7 +22,9 @@ export default function KPICard({ title, value, type, isPercentage = false, curr
     ? emptyDetails.value
     : isPercentage 
       ? `${value}%` 
-      : formatCurrency(value, currency);
+      : isCaseCount
+        ? `${value} cases`
+        : formatCurrency(value, currency);
 
   const subtext = isEmpty ? emptyDetails.subtext : '';
 
@@ -67,7 +70,7 @@ export default function KPICard({ title, value, type, isPercentage = false, curr
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${currentStyle.iconBg} ${currentStyle.iconColor} shrink-0`}>
         {title.includes('Risk') && <AlertCircle size={20} />}
         {title.includes('Recovered') && <TrendingUp size={20} />}
-        {title.includes('Active') && <RefreshCw size={20} className={isEmpty ? '' : 'animate-spin-slow'} />}
+        {(title.includes('Active') || title.includes('Case')) && <RefreshCw size={20} className={isEmpty ? '' : 'animate-spin-slow'} />}
         {title.includes('Rate') && <BarChart2 size={20} />}
       </div>
     </div>

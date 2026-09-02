@@ -3,16 +3,21 @@ import { Search, ShieldCheck, ShieldAlert, Sparkles } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { formatCurrency } from '../services/mockData';
 
-export default function AuditTable({ logs, currency }) {
+export default function AuditTable({ logs = [], currency }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [guardrailFilter, setGuardrailFilter] = useState('All');
 
   const filteredLogs = logs.filter(log => {
+    const txn = log.transaction || '';
+    const dec = log.decision || '';
+    const reas = log.reason || '';
+    const act = log.action || '';
+
     const matchesSearch = 
-      log.transaction.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.decision.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchTerm.toLowerCase());
+      txn.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dec.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reas.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      act.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesGuardrail = 
       guardrailFilter === 'All' || 
@@ -82,9 +87,7 @@ export default function AuditTable({ logs, currency }) {
               </tr>
             ) : (
               filteredLogs.map((log, idx) => {
-                // Parse amount and convert
-                const amtNum = parseInt(log.amount.replace(/[^0-9]/g, ''), 10);
-                const displayAmt = formatCurrency(amtNum, currency);
+                const displayAmt = log.amount ? (typeof log.amount === 'number' ? formatCurrency(log.amount, currency) : log.amount) : '—';
 
                 return (
                   <tr key={idx} className="hover:bg-bg-light/30 transition">
@@ -99,22 +102,16 @@ export default function AuditTable({ logs, currency }) {
                         <code className="text-[11px] font-bold text-navy-dark px-1.5 py-0.5 bg-bg-light border border-border-light rounded">{log.decision}</code>
                       </div>
                     </td>
-                    <td className="p-4 max-w-[200px] truncate" title={log.reason}>
-                      {log.reason}
-                    </td>
+                    <td className="p-4 text-secondary-text max-w-xs">{log.reason}</td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1">
-                        {log.guardrail === 'PASSED' ? (
-                          <ShieldCheck size={14} className="text-success-green" />
-                        ) : (
-                          <ShieldAlert size={14} className="text-error-red" />
-                        )}
-                        <span className={`text-[10px] font-bold ${log.guardrail === 'PASSED' ? 'text-success-green' : 'text-error-red'}`}>
-                          {log.guardrail}
-                        </span>
-                      </div>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded ${
+                        log.guardrail === 'PASSED' ? 'bg-success-green/10 text-success-green' : 'bg-warning-amber/10 text-warning-amber'
+                      }`}>
+                        {log.guardrail === 'PASSED' ? <ShieldCheck size={10} /> : <ShieldAlert size={10} />}
+                        <span>{log.guardrail}</span>
+                      </span>
                     </td>
-                    <td className="p-4">{log.action}</td>
+                    <td className="p-4 text-navy-dark font-bold">{log.action}</td>
                     <td className="p-4">
                       <StatusBadge status={log.outcome} />
                     </td>

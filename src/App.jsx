@@ -262,6 +262,7 @@ export default function App() {
         translations={requireTranslations()} 
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        transactionsCount={transactions.length}
       />
 
       {/* Main Container Wrapper */}
