@@ -20,8 +20,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.get('/health', healthController.getHealth);
 router.get('/razorpay/test-connection', healthController.testRazorpayConnection);
 
-// 2. Development Test Data Seed
+// 2. Development Test Data Seed & Reset
 router.post('/test/seed', testController.seedData);
+router.post('/test/reset', testController.resetData);
 
 // 3. Razorpay TEST Mode Payments Ingestion & Sync
 router.get('/payments', paymentController.getPayments);
