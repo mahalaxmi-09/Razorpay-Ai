@@ -180,6 +180,67 @@ export default function SettingsPage({ lang, onLangChange, currency, onCurrencyC
               </p>
             </div>
           </div>
+
+          {/* Razorpay Test Mode & Sandbox Controls */}
+          <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm">
+            <div className="flex items-center justify-between mb-4 border-b border-border-light/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Sliders size={18} className="text-primary" />
+                <h3 className="text-sm font-extrabold text-navy-dark">Razorpay Test Mode & Data Feeds</h3>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 font-bold rounded">
+                TEST MODE
+              </span>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <p className="text-secondary-text">
+                Generate 10 realistic test payment scenarios (settlement pending, authorization drops, high-value alerts) or sync live payments from the Razorpay Test API.
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/test/seed', { method: 'POST' });
+                      const d = await res.json();
+                      if (d.success) {
+                        alert('✅ Test data generated successfully! Dashboard & payments updated.');
+                        window.location.reload();
+                      } else {
+                        alert('Error: ' + d.error?.message);
+                      }
+                    } catch (e) {
+                      alert('Failed to generate test data: ' + e.message);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary hover:bg-primary/95 text-white font-bold rounded-lg transition cursor-pointer"
+                >
+                  ⚡ Generate Test Data
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/payments/sync', { method: 'POST' });
+                      const d = await res.json();
+                      if (d.success) {
+                        alert(`✅ Razorpay Sync Complete! Processed: ${d.processed}, New: ${d.new_records}, Risk cases: ${d.risk_cases_created}`);
+                        window.location.reload();
+                      } else {
+                        alert('Sync error: ' + (d.error?.message || 'Failed'));
+                      }
+                    } catch (e) {
+                      alert('Failed to sync Razorpay: ' + e.message);
+                    }
+                  }}
+                  className="px-4 py-2 bg-card-bg border border-border-light hover:border-primary text-navy-dark font-bold rounded-lg transition cursor-pointer"
+                >
+                  🔄 Sync Razorpay Test API
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Localizations & System */}

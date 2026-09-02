@@ -58,7 +58,7 @@ export const revenueRiskService = {
             merchantId: transaction.merchantId,
             transactionId: transaction.id,
             recoveryCaseId: recoveryCase.id,
-            eventType: 'RISK_DETECTED',
+            eventType: 'PAYMENT_RISK_DETECTED',
             actor: 'SYSTEM',
             description: `Risk event ${evaluation.riskType} detected for transaction ${transaction.id}. Recommended: ${evaluation.recommendedAction}.`
           }
@@ -85,7 +85,10 @@ export const revenueRiskService = {
     try {
       const whereFilter = merchantId ? { merchantId } : {};
 
-      // 1. Calculate Revenue at Risk (sum of OPEN & MONITORING risk events)
+      // 1. Total Transactions Count
+      const totalTransactions = await prisma.transaction.count({ where: whereFilter });
+
+      // 2. Calculate Revenue at Risk (sum of OPEN, MONITORING, ESCALATED risk events)
       const riskSum = await prisma.revenueRiskEvent.aggregate({
         _sum: { amountAtRisk: true },
         where: {
@@ -93,9 +96,9 @@ export const revenueRiskService = {
           status: { in: ['OPEN', 'MONITORING', 'ESCALATED'] }
         }
       });
-      const revenueAtRisk = riskSum._sum.amountAtRisk !== null ? riskSum._sum.amountAtRisk / 100 : null;
+      const revenueAtRisk = riskSum._sum.amountAtRisk !== null ? riskSum._sum.amountAtRisk / 100 : 0;
 
-      // 2. Calculate Recovered Revenue (sum of RESOLVED risk events)
+      // 3. Calculate Recovered Revenue (sum of RESOLVED risk events)
       const recoveredSum = await prisma.revenueRiskEvent.aggregate({
         _sum: { amountAtRisk: true },
         where: {
@@ -103,16 +106,33 @@ export const revenueRiskService = {
           status: 'RESOLVED'
         }
       });
-      const recoveredRevenue = recoveredSum._sum.amountAtRisk !== null ? recoveredSum._sum.amountAtRisk / 100 : null;
+      const recoveredRevenue = recoveredSum._sum.amountAtRisk !== null ? recoveredSum._sum.amountAtRisk / 100 : 0;
 
-      // 3. Count Active Cases
+      // 4. Count Active Cases
       const activeCasesCount = await prisma.recoveryCase.count({
         where: {
           status: { in: ['OPEN', 'MONITORING', 'ESCALATED'] }
         }
       });
 
-      // 4. Case Breakdowns
+      // 5. Settlement Issues & Failed Payments Counts
+      const settlementIssues = await prisma.transaction.count({
+        where: {
+          ...whereFilter,
+          OR: [
+            { merchantSettlementStatus: 'PENDING' },
+            { merchantSettlementStatus: 'UNSETTLED' }
+          ]
+        }
+      });
+
+      const failedPayments = await prisma.transaction.count({
+        where: {
+          ...whereFilter,
+          status: 'FAILED'
+        }
+      });
+
       const pendingCasesCount = await prisma.recoveryCase.count({
         where: { status: 'OPEN' }
       });
@@ -121,8 +141,8 @@ export const revenueRiskService = {
         where: { status: 'ESCALATED' }
       });
 
-      // 5. Recovery Rate Calculation
-      let recoveryRate = null;
+      // 6. Recovery Rate Calculation
+      let recoveryRate = 0;
       const atRiskVal = revenueAtRisk || 0;
       const recoveredVal = recoveredRevenue || 0;
       const total = atRiskVal + recoveredVal;
@@ -131,22 +151,30 @@ export const revenueRiskService = {
       }
 
       return {
+        totalTransactions,
         revenueAtRisk,
         recoveredRevenue,
         activeCases: activeCasesCount,
+        activeRecoveryCases: activeCasesCount,
         recoveryRate,
         pendingCases: pendingCasesCount,
-        escalatedCases: escalatedCasesCount
+        escalatedCases: escalatedCasesCount,
+        settlementIssues,
+        failedPayments
       };
     } catch (error) {
       console.error('revenueRiskService.getSummary error:', error.message);
       return {
-        revenueAtRisk: null,
-        recoveredRevenue: null,
+        totalTransactions: 0,
+        revenueAtRisk: 0,
+        recoveredRevenue: 0,
         activeCases: 0,
-        recoveryRate: null,
+        activeRecoveryCases: 0,
+        recoveryRate: 0,
         pendingCases: 0,
-        escalatedCases: 0
+        escalatedCases: 0,
+        settlementIssues: 0,
+        failedPayments: 0
       };
     }
   }

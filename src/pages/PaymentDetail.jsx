@@ -3,6 +3,8 @@ import { ArrowLeft, Sparkles, ClipboardList, ShieldCheck, CheckCircle2, Play } f
 import { mockTransactions, formatCurrency } from '../services/mockData';
 import StatusBadge from '../components/StatusBadge';
 
+import { api } from '../lib/api';
+
 export default function PaymentDetail({ transactionId, onNavigate, currency, transactions = [], onUpdateStatus }) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStatus, setExecutionStatus] = useState('');
@@ -29,26 +31,38 @@ export default function PaymentDetail({ transactionId, onNavigate, currency, tra
     );
   }
 
-  const handleExecuteRecovery = () => {
+  const handleExecuteRecovery = async () => {
     setIsExecuting(true);
     setExecutionStatus('Initiating gateway safety checks...');
     
-    setTimeout(() => {
-      setExecutionStatus('Querying merchant settlement feeds...');
+    try {
+      const casesRes = await api.getRecoveryCases();
+      const caseItem = (casesRes.data || casesRes || []).find(c => c.transactionId === txn.id);
       
-      setTimeout(() => {
-        setExecutionStatus('Matching captured UTR nodes...');
-        
-        setTimeout(() => {
-          setIsExecuting(false);
-          setExecutionStatus('completed');
-          if (onUpdateStatus) {
-            onUpdateStatus(txn.id, 'Recovered');
-          }
-          alert(`Successfully verified and matched settlement for ${txn.id}! Revenue recovery status updated to Recovered.`);
-        }, 800);
-      }, 800);
-    }, 800);
+      if (caseItem) {
+        setExecutionStatus('Running guardrail & recovery simulation...');
+        const simRes = await api.simulateRecoveryAction(caseItem.id, caseItem.recommendedAction || 'VERIFY_STATUS');
+        setIsExecuting(false);
+        setExecutionStatus('completed');
+        if (onUpdateStatus) {
+          onUpdateStatus(txn.id, 'Recovered');
+        }
+        alert(`✅ ${simRes.data?.simulationResult || 'Recovery simulation completed successfully!'}`);
+      } else {
+        setExecutionStatus('Matching settlement status...');
+        await api.verifySettlement(txn.id);
+        setIsExecuting(false);
+        setExecutionStatus('completed');
+        if (onUpdateStatus) {
+          onUpdateStatus(txn.id, 'Recovered');
+        }
+        alert(`✅ Settlement verified for ${txn.id}! Status updated to Recovered.`);
+      }
+    } catch (err) {
+      setIsExecuting(false);
+      setExecutionStatus('error');
+      alert(`⚠️ Recovery Action: ${err.message}`);
+    }
   };
 
   const getRiskColor = (risk) => {

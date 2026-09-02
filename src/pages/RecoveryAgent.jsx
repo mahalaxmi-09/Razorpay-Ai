@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bot, 
   Search, 
@@ -12,10 +12,30 @@ import {
   CheckCircle,
   PlayCircle
 } from 'lucide-react';
-import { recoveryData } from '../data/recovery';
+import { api } from '../lib/api';
 
 export default function RecoveryAgent({ onNavigate }) {
   const [selectedStage, setSelectedStage] = useState('Detect');
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionMessage, setActionMessage] = useState('');
+
+  const fetchCases = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getRecoveryCases();
+      const items = res.data || res || [];
+      setCases(items);
+    } catch (err) {
+      console.error('Failed to load recovery cases:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCases();
+  }, []);
 
   const getStageIcon = (stage) => {
     switch (stage) {
@@ -29,16 +49,37 @@ export default function RecoveryAgent({ onNavigate }) {
     }
   };
 
-  const getStageColor = (status) => {
-    switch (status) {
-      case 'success': return 'border-success-green text-success-green bg-success-green/10';
-      case 'warning': return 'border-warning-amber text-warning-amber bg-warning-amber/10';
-      case 'error': return 'border-error-red text-error-red bg-error-red/10';
-      default: return 'border-primary text-primary bg-primary/10';
+  // Group cases dynamically by pipeline stages
+  const detectCases = cases.filter(c => c.status === 'OPEN');
+  const analyzeCases = cases.filter(c => c.status === 'MONITORING');
+  const decideCases = cases.filter(c => c.aiDecisions && c.aiDecisions.length > 0);
+  const guardrailCases = cases.filter(c => c.status === 'ESCALATED' || c.status === 'STOPPED');
+  const recoverCases = cases.filter(c => c.recommendedAction === 'RETRY_ELIGIBLE_PAYMENT');
+  const verifyCases = cases.filter(c => c.status === 'RECOVERED');
+
+  const stages = [
+    { stage: 'Detect', count: detectCases.length, cases: detectCases, status: 'warning' },
+    { stage: 'Analyze', count: analyzeCases.length, cases: analyzeCases, status: 'info' },
+    { stage: 'Decide', count: decideCases.length, cases: decideCases, status: 'info' },
+    { stage: 'Guardrail', count: guardrailCases.length, cases: guardrailCases, status: guardrailCases.length > 0 ? 'error' : 'success' },
+    { stage: 'Recover', count: recoverCases.length, cases: recoverCases, status: 'info' },
+    { stage: 'Verify', count: verifyCases.length, cases: verifyCases, status: 'success' }
+  ];
+
+  const activeStageData = stages.find(s => s.stage === selectedStage) || stages[0];
+
+  const handleTriggerSim = async (caseId, action) => {
+    try {
+      setActionMessage(`Executing simulation on ${caseId}...`);
+      await api.simulateRecoveryAction(caseId, action || 'VERIFY_STATUS');
+      setActionMessage(`✅ Simulation successful on ${caseId}`);
+      await fetchCases();
+      setTimeout(() => setActionMessage(''), 3000);
+    } catch (err) {
+      setActionMessage(`❌ Simulation blocked: ${err.message}`);
+      setTimeout(() => setActionMessage(''), 4000);
     }
   };
-
-  const activeStageData = recoveryData.stages.find(item => item.stage === selectedStage) || recoveryData.stages[0];
 
   return (
     <div className="space-y-6">
@@ -54,20 +95,25 @@ export default function RecoveryAgent({ onNavigate }) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success-green/10 text-success-green rounded-lg border border-success-green/20 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
-            <span>Agent Status: NOMINAL</span>
+            <span>Agent Status: ACTIVE (TEST MODE)</span>
           </div>
         </div>
       </div>
+
+      {actionMessage && (
+        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs font-bold text-navy-dark">
+          {actionMessage}
+        </div>
+      )}
 
       {/* AI Pipeline Visualization Map */}
       <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm">
         <h3 className="text-xs font-bold text-secondary-text uppercase tracking-wider mb-6">AI Pipeline Workflow Visualization</h3>
 
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 relative">
-          {recoveryData.stages.map((item, idx) => {
+          {stages.map((item, idx) => {
             const Icon = getStageIcon(item.stage);
             const isSelected = selectedStage === item.stage;
-            const colors = getStageColor(item.status);
 
             return (
               <div key={item.stage} className="flex flex-col items-center relative">
@@ -121,42 +167,58 @@ export default function RecoveryAgent({ onNavigate }) {
             </div>
 
             <div className="divide-y divide-border-light/60">
-              {activeStageData.cases.length === 0 ? (
-                <div className="py-8 text-center text-secondary-text font-semibold">
+              {loading ? (
+                <div className="py-8 text-center text-secondary-text font-semibold text-xs">
+                  Loading recovery cases...
+                </div>
+              ) : activeStageData.cases.length === 0 ? (
+                <div className="py-8 text-center text-secondary-text font-semibold text-xs">
                   No active cases in queue for stage {activeStageData.stage}.
                 </div>
               ) : (
-                activeStageData.cases.map((c) => (
-                  <div key={c.id} className="py-3 flex items-center justify-between text-xs hover:bg-bg-light/20 px-2 rounded-lg -mx-2">
-                    <div className="space-y-1">
-                      <span className="font-extrabold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(`#/payments/${c.id}`)}>
-                        {c.id}
-                      </span>
-                      <p className="text-secondary-text text-[11px] font-semibold">{c.detail}</p>
+                activeStageData.cases.map((c) => {
+                  const txn = c.transaction || {};
+                  const displayAmt = txn.amount ? `₹${(txn.amount / 100).toLocaleString('en-IN')}` : '₹0';
+
+                  return (
+                    <div key={c.id} className="py-3 flex items-center justify-between text-xs hover:bg-bg-light/20 px-2 rounded-lg -mx-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(`#/payments/${c.transactionId}`)}>
+                            {c.transactionId}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.2 font-bold rounded ${c.priority === 'High' ? 'bg-error-red/10 text-error-red' : 'bg-warning-amber/10 text-warning-amber'}`}>
+                            {c.priority} Priority
+                          </span>
+                        </div>
+                        <p className="text-secondary-text text-[11px] font-semibold">
+                          Recommended: <span className="text-navy-dark font-bold">{c.recommendedAction}</span> • Status: {c.status}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className="font-black text-navy-dark">{displayAmt}</span>
+                        <button 
+                          onClick={() => handleTriggerSim(c.id, c.recommendedAction)}
+                          className="px-2.5 py-1 bg-primary text-white text-[10px] font-bold rounded transition hover:bg-primary/90 cursor-pointer shadow-sm"
+                        >
+                          Simulate Action
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <span className="font-black text-navy-dark">{c.amount}</span>
-                      <button 
-                        onClick={() => onNavigate(`#/payments/${c.id}`)}
-                        className="px-2.5 py-1 bg-card-bg border border-border-light hover:border-primary text-[10px] font-bold text-navy-dark hover:bg-primary/5 rounded transition cursor-pointer"
-                      >
-                        Audit case
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
 
           <div className="border-t border-border-light/60 pt-4 mt-6 flex justify-between items-center text-xs">
-            <span className="text-secondary-text">Reconciliation feeds automatically updated every 15s.</span>
+            <span className="text-secondary-text">Live database queue connected.</span>
             <button 
-              onClick={() => alert("Verification run triggered successfully!")}
+              onClick={fetchCases}
               className="text-primary font-bold hover:underline cursor-pointer"
             >
-              Trigger Run Manually
+              Refresh Queue
             </button>
           </div>
         </div>
@@ -168,18 +230,18 @@ export default function RecoveryAgent({ onNavigate }) {
             
             <div className="space-y-4 text-xs">
               <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">TOTAL PIPELINE CAPTURES</span>
-                <span className="text-base font-extrabold text-navy-dark">177 active processes</span>
+                <span className="text-[10px] text-secondary-text font-bold block mb-1">ACTIVE RECOVERY CASES</span>
+                <span className="text-base font-extrabold text-navy-dark">{cases.length} cases tracked</span>
               </div>
 
               <div className="p-3 bg-bg-light rounded-lg border border-border-light">
                 <span className="text-[10px] text-secondary-text font-bold block mb-1">GUARDRAIL INTERVENTIONS</span>
-                <span className="text-base font-extrabold text-warning-amber">3 holds active</span>
+                <span className="text-base font-extrabold text-warning-amber">{guardrailCases.length} holds active</span>
               </div>
 
               <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">COMPLETED VERIFICATIONS (24H)</span>
-                <span className="text-base font-extrabold text-success-green">412 resolved</span>
+                <span className="text-[10px] text-secondary-text font-bold block mb-1">COMPLETED VERIFICATIONS</span>
+                <span className="text-base font-extrabold text-success-green">{verifyCases.length} resolved</span>
               </div>
             </div>
           </div>
