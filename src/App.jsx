@@ -299,6 +299,7 @@ export default function App() {
       <Copilot 
         isOpen={isCopilotOpen} 
         setIsOpen={setIsCopilotOpen} 
+        lang={lang}
       />
     </div>
   );
