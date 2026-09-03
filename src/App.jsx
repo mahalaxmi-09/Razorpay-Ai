@@ -25,11 +25,13 @@ import { notificationsData } from './data/notifications';
 import { api } from './lib/api';
 
 export default function App() {
-  // Global States
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Global States (persisted across refreshes in localStorage)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isAuthenticated') === 'true';
+  });
   const [merchantName, setMerchantName] = useState(() => localStorage.getItem('merchantName') || 'Mounika');
-  const [lang, setLang] = useState('English');
-  const [currency, setCurrency] = useState('INR');
+  const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'English');
+  const [currency, setCurrency] = useState(() => localStorage.getItem('currency') || 'INR');
   const [notifications, setNotifications] = useState([]);
   
   // Theme state (localStorage persisted)
@@ -85,6 +87,16 @@ export default function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const handleLangChange = (newLang) => {
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
+  };
+
+  const handleCurrencyChange = (newCurrency) => {
+    setCurrency(newCurrency);
+    localStorage.setItem('currency', newCurrency);
+  };
+
   // Status updating transaction callback
   const handleUpdateTransactionStatus = (id, newStatus) => {
     setTransactions(prev => prev.map(t => t.id === id ? { 
@@ -121,6 +133,7 @@ export default function App() {
 
   const handleLogin = (userCredentials) => {
     setIsAuthenticated(true);
+    localStorage.setItem('isAuthenticated', 'true');
     if (userCredentials?.merchantName) {
       setMerchantName(userCredentials.merchantName);
       localStorage.setItem('merchantName', userCredentials.merchantName);
@@ -129,6 +142,7 @@ export default function App() {
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('merchantName');
     window.location.hash = '#/login';
   };
@@ -196,9 +210,9 @@ export default function App() {
         return (
           <SettingsPage 
             lang={lang}
-            onLangChange={setLang}
+            onLangChange={handleLangChange}
             currency={currency}
-            onCurrencyChange={setCurrency}
+            onCurrencyChange={handleCurrencyChange}
             merchantName={merchantName}
             onMerchantNameChange={(newName) => {
               setMerchantName(newName);
@@ -289,9 +303,9 @@ export default function App() {
         <Header 
           pageTitle={getPageTitle()} 
           lang={lang} 
-          onLangChange={setLang} 
+          onLangChange={handleLangChange} 
           currency={currency} 
-          onCurrencyChange={setCurrency} 
+          onCurrencyChange={handleCurrencyChange} 
           merchantName={merchantName}
           onNavigate={handleNavigate}
           onSignOut={handleSignOut}
