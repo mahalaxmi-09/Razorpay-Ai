@@ -1,15 +1,19 @@
 import React from 'react';
 import { AlertCircle, ArrowUpRight, Inbox } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
-import { DATA_MODE, dashboardDemoData } from '../data/demoData';
+import { isDemoMode } from '../config/dataMode';
+import { dashboardDemoData } from '../data/demoData';
 
 export default function PriorityCases({ transactions = [], currency, onNavigate }) {
-  const isDemo = DATA_MODE === 'demo';
-  const liveCases = transactions.filter(t => t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL' || t.risk === 'Medium' || t.riskStatus === 'MEDIUM');
+  const isDemo = isDemoMode();
+
+  const liveCases = transactions.filter(t => 
+    t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL' || t.risk === 'Medium' || t.riskStatus === 'MEDIUM'
+  );
   
-  const priorityItems = liveCases.length > 0 
-    ? liveCases 
-    : (isDemo ? dashboardDemoData.priorityCases : []);
+  const priorityItems = isDemo 
+    ? dashboardDemoData.priorityCases 
+    : liveCases;
 
   const hasCases = priorityItems.length > 0;
 
@@ -36,16 +40,22 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
         ) : (
           <div className="space-y-4">
             {priorityItems.slice(0, 3).map((c, index) => {
-              const isHigh = index === 0;
+              const isFirst = index === 0;
 
-              if (isHigh) {
+              if (isFirst) {
+                const confidenceVal = c.confidence ? `${c.confidence}%` : (c.aiConfidence || '94%');
+                const issueText = c.issue || c.failureReason || 'Critical compliance & fraud risk';
+                const actionLabel = c.action || 'Trigger Autonomous Recovery';
+
                 return (
-                  <div key={c.id} className="p-4 bg-error-red/[0.02] border border-error-red/20 rounded-xl">
+                  <div key={index} className="p-4 bg-error-red/[0.02] border border-error-red/20 rounded-xl">
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="text-[10px] text-error-red font-extrabold uppercase tracking-widest flex items-center gap-1">
-                        <AlertCircle size={10} /> HIGH PRIORITY
+                        <AlertCircle size={10} /> {c.priority || 'HIGH PRIORITY'}
                       </span>
-                      <span className="text-xs text-secondary-text font-semibold">AI Confidence: <strong className="text-navy-dark font-extrabold">{c.aiConfidence || '94%'}</strong></span>
+                      <span className="text-xs text-secondary-text font-semibold">
+                        AI Confidence: <strong className="text-navy-dark font-extrabold">{confidenceVal}</strong>
+                      </span>
                     </div>
                     
                     <div className="flex items-baseline justify-between mb-2">
@@ -55,12 +65,14 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                     <div className="text-xs text-secondary-text space-y-1 mb-4">
                       <div className="flex justify-between border-b border-border-light/40 py-1">
                         <span>Gate Status:</span>
-                        <span className="font-bold text-navy-dark">{c.customerDebited === 'Yes' ? 'Customer debited' : 'Failed'}</span>
+                        <span className="font-bold text-navy-dark">
+                          {c.customerDebited === 'Yes' ? 'Customer debited' : 'Failed'}
+                        </span>
                       </div>
                       <div className="flex justify-between py-1">
                         <span>Issue:</span>
-                        <span className="font-bold text-error-red truncate max-w-[200px]" title={c.failureReason || c.status}>
-                          {c.failureReason || (c.merchantSettlementStatus === 'PENDING' ? 'Merchant settlement pending' : 'Risk action required')}
+                        <span className="font-bold text-error-red truncate max-w-[200px]" title={issueText}>
+                          {issueText}
                         </span>
                       </div>
                     </div>
@@ -69,22 +81,26 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                       onClick={() => onNavigate('#/recovery')} 
                       className="w-full py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-xs shadow-sm transition flex items-center justify-center gap-1 cursor-pointer"
                     >
-                      <span>Trigger Autonomous Recovery</span>
+                      <span>{actionLabel}</span>
                       <ArrowUpRight size={14} />
                     </button>
                   </div>
                 );
               }
 
+              const customerName = c.customer || c.customerName || `TXN_${c.id || index}`;
+              const issueText = c.issue || c.failureReason || c.status;
+              const priorityLabel = c.priority || c.risk || c.riskStatus || 'Medium';
+
               return (
-                <div key={c.id} className="flex items-center justify-between text-xs py-2 border-b border-border-light/40 last:border-0 hover:bg-bg-light/30 px-2 rounded-lg -mx-2 transition">
+                <div key={index} className="flex items-center justify-between text-xs py-2 border-b border-border-light/40 last:border-0 hover:bg-bg-light/30 px-2 rounded-lg -mx-2 transition">
                   <div className="space-y-0.5">
-                    <span className="font-bold text-navy-dark block">{c.customerName || c.id}</span>
-                    <span className="text-[11px] text-secondary-text">{c.failureReason || c.status}</span>
+                    <span className="font-bold text-navy-dark block">{customerName}</span>
+                    <span className="text-[11px] text-secondary-text">{issueText}</span>
                   </div>
                   <div className="text-right">
                     <span className="font-extrabold text-navy-dark block">{formatCurrency(c.amount, currency)}</span>
-                    <span className="text-[10px] text-warning-amber font-bold">{c.risk || c.riskStatus}</span>
+                    <span className="text-[10px] text-warning-amber font-bold">{priorityLabel}</span>
                   </div>
                 </div>
               );

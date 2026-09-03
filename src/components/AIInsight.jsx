@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
 import { Sparkles, ChevronRight, ChevronLeft, Lightbulb } from 'lucide-react';
-import { DATA_MODE, dashboardDemoData } from '../data/demoData';
+import { isDemoMode } from '../config/dataMode';
+import { dashboardDemoData } from '../data/demoData';
 
 export default function AIInsight({ transactions = [], onNavigate }) {
+  const isDemo = isDemoMode();
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const isDemo = DATA_MODE === 'demo';
   const hasTransactions = transactions && transactions.length > 0;
 
   // Generate dynamic insights derived from live transactions or controlled demo data
   const insights = [];
 
-  if (hasTransactions) {
+  if (isDemo) {
+    insights.push({
+      id: 'demo-insight',
+      text: dashboardDemoData.aiInsight.message,
+      type: dashboardDemoData.aiInsight.severity.toLowerCase(),
+      actionable: 'View recovery pipeline',
+      route: '#/recovery'
+    });
+  } else if (hasTransactions) {
     const atRiskTxns = transactions.filter(t => t.risk === 'High' || t.riskStatus === 'HIGH' || t.riskStatus === 'CRITICAL');
     const pendingSettlements = transactions.filter(t => t.merchantSettlementStatus === 'PENDING' || t.status === 'Settlement Pending');
     const recoveredTxns = transactions.filter(t => t.status === 'Recovered' || t.rawStatus === 'SETTLEMENT_PROCESSED');
@@ -56,30 +65,6 @@ export default function AIInsight({ transactions = [], onNavigate }) {
         route: '#/payments'
       });
     }
-  } else if (isDemo) {
-    insights.push(
-      {
-        id: 'demo-1',
-        text: `${dashboardDemoData.activeCases} recovery cases active (₹${dashboardDemoData.revenueAtRisk.toLocaleString('en-IN')} at risk). Automated recovery workflows monitoring telemetry.`,
-        type: 'warning',
-        actionable: 'View recovery pipeline',
-        route: '#/recovery'
-      },
-      {
-        id: 'demo-2',
-        text: `${dashboardDemoData.transactionsAnalyzed} transactions analyzed (+${dashboardDemoData.revenueRiskIncrease}% risk increase). Guardrails holding high-value retry.`,
-        type: 'info',
-        actionable: 'View affected transactions',
-        route: '#/payments'
-      },
-      {
-        id: 'demo-3',
-        text: `₹${dashboardDemoData.recovered.toLocaleString('en-IN')} in payment recoveries verified successfully in Test Mode.`,
-        type: 'success',
-        actionable: 'View analytics logs',
-        route: '#/analytics'
-      }
-    );
   }
 
   const hasInsights = insights.length > 0;

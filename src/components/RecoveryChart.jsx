@@ -1,39 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { currencyConversions } from '../services/mockData';
+import { isDemoMode } from '../config/dataMode';
+import { dashboardDemoData } from '../data/demoData';
 import { api } from '../lib/api';
 
 export default function RecoveryChart({ currency }) {
+  const isDemo = isDemoMode();
   const [activeTab, setActiveTab] = useState('30 Days');
   const [chartData, setChartData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Multiplier from currency conversion
   const conv = currencyConversions[currency] || currencyConversions.INR;
 
-  // Load analytics recovery metrics from PostgreSQL database
+  // Load analytics recovery metrics from backend only in live mode
   useEffect(() => {
+    if (isDemo) {
+      setChartData(dashboardDemoData.chartData[activeTab] || dashboardDemoData.chartData['30 Days']);
+      return;
+    }
+
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
         const data = await api.getAnalytics();
-        setChartData(data);
+        setChartData(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load chart analytics data:', err.message);
+        setChartData([]);
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [isDemo, activeTab]);
 
-  const hasData = chartData.length > 0;
+  const hasData = chartData && chartData.length > 0;
 
   // Convert values based on current currency
-  const convertedData = chartData.map(item => ({
+  const convertedData = (chartData || []).map(item => ({
     name: item.date,
-    'Revenue at Risk': Math.round(item.revenueAtRisk * conv.rate),
-    'Revenue Recovered': Math.round(item.recoveredRevenue * conv.rate)
+    'Revenue at Risk': Math.round((item.revenueAtRisk || 0) * conv.rate),
+    'Revenue Recovered': Math.round((item.recoveredRevenue || 0) * conv.rate)
   }));
 
   const formatYAxis = (tickItem) => {
@@ -69,7 +78,12 @@ export default function RecoveryChart({ currency }) {
           {['7 Days', '30 Days', '90 Days'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+                if (isDemo) {
+                  setChartData(dashboardDemoData.chartData[tab] || dashboardDemoData.chartData['30 Days']);
+                }
+              }}
               className={`px-3 py-1 text-xs font-bold rounded-md transition cursor-pointer ${activeTab === tab ? 'bg-card-bg text-primary shadow-sm' : 'text-secondary-text hover:text-navy-dark'}`}
             >
               {tab}

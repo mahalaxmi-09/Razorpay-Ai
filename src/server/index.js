@@ -38,6 +38,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 RazorRecover AI Server running on http://localhost:${PORT}`);
-});
+// Start listener only when executed directly (not when imported as a serverless module)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 RazorRecover AI Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;

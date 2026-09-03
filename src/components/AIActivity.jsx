@@ -1,45 +1,60 @@
 import React from 'react';
 import { Sparkles, Activity } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
-import { DATA_MODE, dashboardDemoData } from '../data/demoData';
+import { isDemoMode } from '../config/dataMode';
+import { dashboardDemoData } from '../data/demoData';
 
 export default function AIActivity({ transactions = [], currency }) {
-  const getStatusColor = (status) => {
-    switch (status) {
+  const isDemo = isDemoMode();
+
+  const getStatusColor = (type) => {
+    switch (type) {
       case 'success': return 'bg-success-green';
+      case 'monitoring': return 'bg-primary';
+      case 'escalated': return 'bg-error-red';
       case 'warning': return 'bg-warning-amber';
       case 'error': return 'bg-error-red';
       default: return 'bg-secondary-text';
     }
   };
 
-  const isDemo = DATA_MODE === 'demo';
-  const hasLiveTransactions = transactions.length > 0;
+  const hasLiveTransactions = transactions && transactions.length > 0;
 
   // Determine display activity list
   let displayActivities = [];
 
-  if (hasLiveTransactions) {
+  if (isDemo) {
+    displayActivities = dashboardDemoData.recoveryActivity.items.map((item, index) => {
+      let title = '';
+      if (item.type === 'success') {
+        title = `✓ ${formatCurrency(item.amount, currency)} ${item.label.toLowerCase()}`;
+      } else {
+        title = `${formatCurrency(item.amount, currency)} · ${item.label}`;
+      }
+
+      return {
+        id: `demo-act-${index}`,
+        type: item.type,
+        title,
+        description: item.description,
+        time: item.time
+      };
+    });
+  } else if (hasLiveTransactions) {
     displayActivities = transactions.slice(0, 4).map(t => {
       const isRecovered = t.status === 'Recovered' || t.status === 'VERIFIED_RECOVERED';
       return {
         id: t.id,
-        status: isRecovered ? 'success' : (t.status === 'Payment Failed' || t.status === 'FAILED' ? 'error' : 'warning'),
-        amount: t.amount,
+        type: isRecovered ? 'success' : (t.status === 'Payment Failed' || t.status === 'FAILED' ? 'error' : 'warning'),
         title: isRecovered 
           ? `✓ ${formatCurrency(t.amount, currency)} recovered` 
-          : `${formatCurrency(t.amount, currency)} • ${t.status}`,
+          : `${formatCurrency(t.amount, currency)} · ${t.status}`,
         description: isRecovered 
           ? 'Payment verified successfully' 
           : (t.failureReason || (t.status === 'Settlement Pending' ? 'Settlement reconciliation in progress' : 'Monitored by recovery engine')),
         time: t.date || 'Recently'
       };
     });
-  } else if (isDemo) {
-    displayActivities = dashboardDemoData.activityItems.map(item => ({
-      ...item,
-      title: item.amount ? (item.status === 'success' ? `✓ ${formatCurrency(item.amount, currency)} recovered` : `${formatCurrency(item.amount, currency)} • ${item.title.split('• ')[1] || 'Tracked'}`) : item.title
-    }));
   }
 
   const showEmptyState = !hasLiveTransactions && !isDemo;
@@ -53,7 +68,7 @@ export default function AIActivity({ transactions = [], currency }) {
         </div>
         {isDemo && (
           <span className="text-[10px] font-bold text-secondary-text bg-bg-light px-2 py-0.5 rounded border border-border-light">
-            {dashboardDemoData.transactionsAnalyzed} analyzed (+{dashboardDemoData.revenueRiskIncrease}%)
+            {dashboardDemoData.recoveryActivity.analyzed} analyzed (+{dashboardDemoData.recoveryActivity.increasePercent}%)
           </span>
         )}
       </div>
@@ -72,7 +87,7 @@ export default function AIActivity({ transactions = [], currency }) {
             {displayActivities.map((activity) => (
               <div key={activity.id} className="flex items-start gap-3 text-xs leading-tight transition hover:bg-bg-light/40 p-2 rounded-lg -mx-2">
                 <div className="mt-1.5">
-                  <span className={`w-2.5 h-2.5 rounded-full block ${getStatusColor(activity.status)}`}></span>
+                  <span className={`w-2.5 h-2.5 rounded-full block ${getStatusColor(activity.type)}`}></span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
