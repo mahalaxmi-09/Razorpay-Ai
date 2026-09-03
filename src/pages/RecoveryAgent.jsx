@@ -9,18 +9,20 @@ import {
   TrendingUp, 
   ShieldCheck, 
   AlertCircle, 
-  CheckCircle,
-  PlayCircle,
-  Sparkles,
-  Check,
-  X,
-  Clock,
-  ShieldAlert,
-  ArrowRight
+  CheckCircle, 
+  Sparkles, 
+  Check, 
+  X, 
+  Clock, 
+  ShieldAlert, 
+  ArrowRight 
 } from 'lucide-react';
+import { isDemoMode } from '../config/dataMode';
+import { recoveryCasesData } from '../data/recovery';
 import { api } from '../lib/api';
 
 export default function RecoveryAgent({ onNavigate }) {
+  const isDemo = isDemoMode();
   const [selectedStage, setSelectedStage] = useState('Detect');
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,13 +31,20 @@ export default function RecoveryAgent({ onNavigate }) {
   const [processingCaseId, setProcessingCaseId] = useState(null);
 
   const fetchCases = async () => {
+    if (isDemo) {
+      setCases(recoveryCasesData);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await api.getRecoveryCases();
       const items = res.data || res || [];
-      setCases(items);
+      setCases(Array.isArray(items) ? items : []);
     } catch (err) {
       console.error('Failed to load recovery cases:', err.message);
+      setCases([]);
     } finally {
       setLoading(false);
     }
@@ -43,7 +52,7 @@ export default function RecoveryAgent({ onNavigate }) {
 
   useEffect(() => {
     fetchCases();
-  }, []);
+  }, [isDemo]);
 
   const getStageIcon = (stage) => {
     switch (stage) {
@@ -64,7 +73,6 @@ export default function RecoveryAgent({ onNavigate }) {
   const approvalCases = cases.filter(c => c.status === 'AWAITING_APPROVAL');
   const executeCases = cases.filter(c => c.status === 'APPROVED' || c.status === 'EXECUTING' || c.status === 'VERIFYING');
   const verifyCases = cases.filter(c => c.status === 'VERIFIED_RECOVERED');
-  const stoppedCases = cases.filter(c => c.status === 'STOPPED' || c.status === 'ESCALATED' || c.status === 'FAILED');
 
   const stages = [
     { stage: 'Detect', count: detectCases.length, cases: detectCases, status: 'warning' },
@@ -78,9 +86,20 @@ export default function RecoveryAgent({ onNavigate }) {
   const activeStageData = stages.find(s => s.stage === selectedStage) || stages[0];
 
   const handleApproveCase = async (caseId) => {
+    setProcessingCaseId(caseId);
+    setActionMessage(`Approving recovery for case ${caseId}...`);
+
+    if (isDemo) {
+      setTimeout(() => {
+        setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'VERIFIED_RECOVERED', approvalRequired: false } : c));
+        setActionMessage(`✅ Case ${caseId} approved and executed. Result: VERIFIED_RECOVERED`);
+        setProcessingCaseId(null);
+        setTimeout(() => setActionMessage(''), 4000);
+      }, 600);
+      return;
+    }
+
     try {
-      setProcessingCaseId(caseId);
-      setActionMessage(`Approving recovery for case ${caseId}...`);
       const res = await api.approveRecoveryCase(caseId);
       setActionMessage(`✅ Case ${caseId} approved and executed. Result: ${res.data?.status || 'COMPLETED'}`);
       await fetchCases();
@@ -94,10 +113,21 @@ export default function RecoveryAgent({ onNavigate }) {
   };
 
   const handleRejectCase = async (caseId) => {
+    setProcessingCaseId(caseId);
+    setActionMessage(`Rejecting recovery for case ${caseId}...`);
+
+    if (isDemo) {
+      setTimeout(() => {
+        setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'STOPPED' } : c));
+        setActionMessage(`🛑 Case ${caseId} halted and marked STOPPED.`);
+        setProcessingCaseId(null);
+        setTimeout(() => setActionMessage(''), 4000);
+      }, 600);
+      return;
+    }
+
     try {
-      setProcessingCaseId(caseId);
-      setActionMessage(`Rejecting recovery for case ${caseId}...`);
-      await api.rejectRecoveryCase(caseId, 'MERCHANT', 'Merchant rejected automated recovery.');
+      await api.rejectRecoveryCase(caseId, 'Merchant rejected automated recovery.');
       setActionMessage(`🛑 Case ${caseId} halted and marked STOPPED.`);
       await fetchCases();
       setTimeout(() => setActionMessage(''), 4000);
@@ -110,9 +140,20 @@ export default function RecoveryAgent({ onNavigate }) {
   };
 
   const handleExecuteRecovery = async (caseId, action) => {
+    setProcessingCaseId(caseId);
+    setActionMessage(`Autonomous Agent executing ${action || 'recovery'} on ${caseId}...`);
+
+    if (isDemo) {
+      setTimeout(() => {
+        setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: 'VERIFYING', currentAction: action } : c));
+        setActionMessage(`✅ Action ${action || 'RETRY'} executed on ${caseId}. Verifying provider capture.`);
+        setProcessingCaseId(null);
+        setTimeout(() => setActionMessage(''), 4000);
+      }, 600);
+      return;
+    }
+
     try {
-      setProcessingCaseId(caseId);
-      setActionMessage(`Autonomous Agent executing ${action || 'recovery'} on ${caseId}...`);
       const res = await api.executeRecoveryAction(caseId, action);
       if (res.data?.status === 'AWAITING_APPROVAL') {
         setActionMessage(`⚠️ Guardrail: Case ${caseId} requires merchant approval before execution.`);
@@ -132,9 +173,30 @@ export default function RecoveryAgent({ onNavigate }) {
   };
 
   const handleAnalyzeWithAI = async (caseId) => {
+    setAnalyzingCaseId(caseId);
+    setActionMessage(`🤖 Querying OpenAI intelligence engine for case ${caseId}...`);
+
+    if (isDemo) {
+      setTimeout(() => {
+        setCases(prev => prev.map(c => c.id === caseId ? {
+          ...c,
+          status: 'ACTION_RECOMMENDED',
+          aiDecision: {
+            rootCause: 'INSUFFICIENT_FUNDS',
+            confidence: 0.92,
+            modelUsed: 'gpt-4o',
+            reasoningSummary: 'Temporary customer balance drop. Customer recovery link recommended.',
+            merchantMessage: 'Send automated WhatsApp / SMS payment link to customer.'
+          }
+        } : c));
+        setActionMessage(`✅ AI Analysis Completed (OpenAI gpt-4o) for ${caseId}`);
+        setAnalyzingCaseId(null);
+        setTimeout(() => setActionMessage(''), 4000);
+      }, 800);
+      return;
+    }
+
     try {
-      setAnalyzingCaseId(caseId);
-      setActionMessage(`🤖 Querying OpenAI intelligence engine for case ${caseId}...`);
       const res = await api.analyzeRecoveryCase(caseId);
       setActionMessage(`✅ AI Analysis Completed (${res.decisionSource || 'OpenAI Engine'}) for ${caseId}`);
       await fetchCases();
@@ -179,223 +241,205 @@ export default function RecoveryAgent({ onNavigate }) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success-green/10 text-success-green rounded-lg border border-success-green/20 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
-            <span>Autonomous Engine: ACTIVE (TEST MODE)</span>
+            Agent Active • Razorpay Test Mode
           </div>
         </div>
       </div>
 
+      {/* Global Action Feedback Message */}
       {actionMessage && (
-        <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-xs font-bold text-navy-dark animate-fade-in">
-          {actionMessage}
+        <div className="p-3 bg-navy-dark text-white text-xs font-semibold rounded-xl flex items-center justify-between shadow-lg animate-fade-in">
+          <span>{actionMessage}</span>
+          <button onClick={() => setActionMessage('')} className="text-secondary-text hover:text-white">
+            <X size={14} />
+          </button>
         </div>
       )}
 
-      {/* AI Pipeline Visualization Map */}
-      <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm">
-        <h3 className="text-xs font-bold text-secondary-text uppercase tracking-wider mb-6">Autonomous Recovery Pipeline</h3>
-
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 relative">
-          {stages.map((item, idx) => {
-            const Icon = getStageIcon(item.stage);
-            const isSelected = selectedStage === item.stage;
-
-            return (
-              <div key={item.stage} className="flex flex-col items-center relative">
-                {/* Horizontal Line Connector */}
-                {idx < 5 && (
-                  <div className="hidden md:block absolute top-7 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 bg-border-light z-0">
-                    <ChevronRight size={12} className="absolute -top-1.5 right-0 text-secondary-text/50" />
-                  </div>
-                )}
-                
-                {/* Stage Button Icon */}
-                <button
-                  onClick={() => setSelectedStage(item.stage)}
-                  className={`
-                    w-14 h-14 rounded-full flex items-center justify-center border-2 transition z-10 cursor-pointer
-                    ${isSelected 
-                      ? 'border-primary bg-primary text-white scale-110 shadow-lg shadow-primary/20' 
-                      : `bg-card-bg hover:bg-bg-light border-border-light text-secondary-text hover:text-navy-dark`
-                    }
-                  `}
-                >
-                  <Icon size={20} />
-                </button>
-
-                {/* Info Text */}
-                <div className="text-center mt-3">
-                  <span className="block text-xs font-extrabold text-navy-dark leading-none">{item.stage}</span>
-                  <span className="inline-block text-[10px] text-secondary-text font-bold mt-1 px-1.5 py-0.5 bg-bg-light border border-border-light rounded-full">
-                    {item.count} cases
-                  </span>
-                </div>
+      {/* Pipeline Navigation Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {stages.map((stage) => {
+          const Icon = getStageIcon(stage.stage);
+          const isSelected = selectedStage === stage.stage;
+          return (
+            <button
+              key={stage.stage}
+              onClick={() => setSelectedStage(stage.stage)}
+              className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                isSelected 
+                  ? 'bg-primary text-white border-primary shadow-md shadow-primary/20 scale-[1.02]' 
+                  : 'bg-card-bg text-navy-dark border-border-light hover:border-primary/40 hover:bg-bg-light/50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <Icon size={18} className={isSelected ? 'text-white' : 'text-primary'} />
+                <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-bg-light text-secondary-text'
+                }`}>
+                  {stage.count}
+                </span>
               </div>
-            );
-          })}
-        </div>
+              <div className={`text-xs font-black tracking-tight ${isSelected ? 'text-white' : 'text-navy-dark'}`}>
+                {stage.stage}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Selected Stage Detail list */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cases Listing */}
-        <div className="lg:col-span-2 bg-card-bg p-6 rounded-xl border border-border-light shadow-sm flex flex-col justify-between">
+      {/* Stage Detail Workspace */}
+      <div className="bg-card-bg rounded-xl border border-border-light shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-border-light flex items-center justify-between bg-bg-light/40">
           <div>
-            <div className="flex items-center justify-between mb-4 border-b border-border-light pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
-                <h3 className="text-sm font-bold text-navy-dark">Queue Details: Stage {activeStageData.stage}</h3>
-              </div>
-              <span className="text-[10px] text-secondary-text font-bold uppercase tracking-wider">
-                Showing {activeStageData.cases.length} entries
+            <h3 className="text-base font-extrabold text-navy-dark flex items-center gap-2">
+              <span>{selectedStage} Pipeline</span>
+              <span className="text-xs font-bold px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                {activeStageData.count} Cases
               </span>
+            </h3>
+            <p className="text-xs text-secondary-text mt-0.5">
+              {selectedStage === 'Detect' && 'Real-time payment failures and settlement delays ingested from Razorpay webhook telemetry.'}
+              {selectedStage === 'Analyze' && 'Evaluating payment telemetry and root cause diagnostics with OpenAI reasoning.'}
+              {selectedStage === 'Decide' && 'Autonomous AI recovery recommendations validated against business safety policies.'}
+              {selectedStage === 'Approval' && 'Transactions exceeding safety limits (≥ ₹50,000 or Critical Risk) held for merchant authorization.'}
+              {selectedStage === 'Execute' && 'Safe Test Mode recovery actions actively processing or verifying provider capture.'}
+              {selectedStage === 'Verify' && 'Positive provider capture confirmed. Successfully counted towards Recovered Revenue.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Stage Cases List */}
+        <div className="divide-y divide-border-light">
+          {loading ? (
+            <div className="p-12 text-center text-xs text-secondary-text">
+              Loading recovery pipeline cases...
             </div>
+          ) : activeStageData.cases.length === 0 ? (
+            <div className="p-12 text-center text-secondary-text">
+              <CheckCircle size={32} className="mx-auto text-success-green/40 mb-2" />
+              <span className="text-sm font-bold text-navy-dark block">No cases in {selectedStage} stage</span>
+              <p className="text-xs mt-1 max-w-sm mx-auto">
+                All cases in this stage have completed or transitioned through the autonomous recovery state machine.
+              </p>
+            </div>
+          ) : (
+            activeStageData.cases.map((c) => {
+              const txn = c.transaction || {};
+              const amountInr = txn.amount ? (txn.amount / 100).toLocaleString('en-IN') : '0';
+              const ai = c.aiDecision;
 
-            <div className="divide-y divide-border-light/60">
-              {loading ? (
-                <div className="py-8 text-center text-secondary-text font-semibold text-xs">
-                  Loading recovery cases from database...
-                </div>
-              ) : activeStageData.cases.length === 0 ? (
-                <div className="py-8 text-center text-secondary-text font-semibold text-xs">
-                  No active recovery cases in queue for stage {activeStageData.stage}.
-                </div>
-              ) : (
-                activeStageData.cases.map((c) => {
-                  const txn = c.transaction || {};
-                  const displayAmt = txn.amount ? `₹${(txn.amount / 100).toLocaleString('en-IN')}` : '₹0';
-                  const latestDecision = c.aiDecisions && c.aiDecisions.length > 0 ? c.aiDecisions[0] : null;
-                  const isAwaitingApproval = c.status === 'AWAITING_APPROVAL';
-                  const isResolved = c.status === 'VERIFIED_RECOVERED';
-                  const isBusy = processingCaseId === c.id || analyzingCaseId === c.id;
-
-                  return (
-                    <div key={c.id} className="py-3.5 flex flex-col gap-2 hover:bg-bg-light/20 px-2 rounded-lg -mx-2 transition">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-extrabold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(`#/payments/${c.transactionId}`)}>
-                              {c.transactionId}
-                            </span>
-                            <span className={`text-[9px] px-1.5 py-0.2 font-bold rounded ${c.priority === 'High' || c.priority === 'URGENT' ? 'bg-error-red/10 text-error-red' : 'bg-warning-amber/10 text-warning-amber'}`}>
-                              {c.priority}
-                            </span>
-                            {getStatusBadge(c.status)}
-                            {latestDecision && (
-                              <span className="text-[9px] px-1.5 py-0.2 bg-primary/10 text-primary font-bold rounded flex items-center gap-1">
-                                <Sparkles size={10} /> {(latestDecision.confidence * 100).toFixed(0)}% AI Conf.
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-secondary-text text-[11px] font-semibold">
-                            Recommended Action: <span className="text-navy-dark font-bold">{c.recommendedAction || 'VERIFY_PAYMENT'}</span> • Attempts: {c.attempts || 0}/3
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-black text-navy-dark mr-1">{displayAmt}</span>
-                          
-                          {/* Approval Actions */}
-                          {isAwaitingApproval ? (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleApproveCase(c.id)}
-                                disabled={isBusy}
-                                className="px-2.5 py-1 bg-success-green hover:bg-success-green/90 text-white text-[10px] font-bold rounded transition cursor-pointer flex items-center gap-1 shadow-sm"
-                              >
-                                <Check size={11} /> Approve
-                              </button>
-                              <button
-                                onClick={() => handleRejectCase(c.id)}
-                                disabled={isBusy}
-                                className="px-2 py-1 bg-card-bg border border-error-red text-error-red hover:bg-error-red/10 text-[10px] font-bold rounded transition cursor-pointer flex items-center gap-1"
-                              >
-                                <X size={11} /> Reject
-                              </button>
-                            </div>
-                          ) : isResolved ? (
-                            <span className="text-xs font-bold text-success-green flex items-center gap-1">
-                              <CheckCircle size={14} /> Settled
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <button 
-                                onClick={() => handleAnalyzeWithAI(c.id)}
-                                disabled={isBusy}
-                                className="px-2.5 py-1 bg-card-bg border border-border-light hover:border-primary text-navy-dark hover:bg-primary/5 text-[10px] font-bold rounded transition cursor-pointer flex items-center gap-1"
-                              >
-                                <Sparkles size={10} className="text-primary" />
-                                <span>{analyzingCaseId === c.id ? 'Analyzing...' : 'Analyze'}</span>
-                              </button>
-                              <button 
-                                onClick={() => handleExecuteRecovery(c.id, c.recommendedAction)}
-                                disabled={isBusy}
-                                className="px-2.5 py-1 bg-primary text-white text-[10px] font-bold rounded transition hover:bg-primary/90 cursor-pointer shadow-sm flex items-center gap-1"
-                              >
-                                <PlayCircle size={11} />
-                                <span>{processingCaseId === c.id ? 'Executing...' : 'Execute'}</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+              return (
+                <div key={c.id} className="p-5 hover:bg-bg-light/30 transition duration-150">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Left: Transaction & Risk Info */}
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-extrabold text-sm text-navy-dark tracking-tight">
+                          {c.transactionId || c.id}
+                        </span>
+                        <span className="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          ₹{amountInr}
+                        </span>
+                        {getStatusBadge(c.status)}
+                        <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                          c.priority === 'CRITICAL' ? 'bg-error-red/10 text-error-red' :
+                          c.priority === 'HIGH' ? 'bg-warning-amber/10 text-warning-amber' :
+                          'bg-primary/10 text-primary'
+                        }`}>
+                          {c.priority} Priority
+                        </span>
                       </div>
 
-                      {/* AI Decision Panel if present */}
-                      {latestDecision && (
-                        <div className="p-2.5 bg-bg-light/70 border border-border-light rounded-md text-[11px] text-secondary-text space-y-1">
+                      <div className="text-xs text-secondary-text flex items-center gap-4 flex-wrap">
+                        <span>Customer: <strong className="text-navy-dark">{txn.customer?.name || 'Customer'}</strong></span>
+                        <span>Attempts: <strong className="text-navy-dark">{c.attempts}/{c.maxAttempts || 3}</strong></span>
+                        <span>Method: <strong className="text-navy-dark">{txn.paymentMethod || 'CARD'}</strong></span>
+                      </div>
+
+                      {/* Failure / Context details */}
+                      <p className="text-xs text-secondary-text font-medium bg-bg-light p-2.5 rounded-lg border border-border-light max-w-2xl">
+                        <strong className="text-navy-dark">Reason: </strong>
+                        {txn.failureReason || (txn.merchantSettlementStatus === 'PENDING' ? 'Bank settlement reconciliation pending' : 'Active monitoring')}
+                      </p>
+
+                      {/* AI Decision Box if available */}
+                      {ai && (
+                        <div className="mt-2 p-3 bg-primary/[0.03] border border-primary/20 rounded-lg text-xs space-y-1 max-w-2xl">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-navy-dark">Root Cause: <span className="text-primary">{latestDecision.rootCause || latestDecision.issue}</span></span>
-                            <span className="text-[9px] font-bold text-secondary-text">Source: {latestDecision.decisionSource || latestDecision.model || 'OpenAI'}</span>
+                            <span className="font-bold text-primary flex items-center gap-1">
+                              <Sparkles size={12} /> Root Cause: {ai.rootCause}
+                            </span>
+                            <span className="text-[10px] text-secondary-text font-bold">
+                              Confidence: <strong>{Math.round((ai.confidence || 0.9) * 100)}%</strong> ({ai.modelUsed || 'OpenAI gpt-4o'})
+                            </span>
                           </div>
-                          <p className="text-[10px] text-navy-dark font-medium">{latestDecision.merchantMessage || latestDecision.reasoningSummary || latestDecision.reason}</p>
+                          <p className="text-secondary-text text-[11px]">{ai.reasoningSummary}</p>
                         </div>
                       )}
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
 
-          <div className="border-t border-border-light/60 pt-4 mt-6 flex justify-between items-center text-xs">
-            <span className="text-secondary-text font-medium">Single source of truth: SQLite / PostgreSQL database.</span>
-            <button 
-              onClick={fetchCases}
-              className="text-primary font-bold hover:underline cursor-pointer"
-            >
-              Refresh Queue
-            </button>
-          </div>
-        </div>
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2 self-start lg:self-center shrink-0">
+                      {/* Stage 1: Detect -> Analyze */}
+                      {c.status === 'OPEN' && (
+                        <button
+                          onClick={() => handleAnalyzeWithAI(c.id)}
+                          disabled={analyzingCaseId === c.id}
+                          className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          <Sparkles size={14} />
+                          <span>{analyzingCaseId === c.id ? 'Analyzing...' : 'Analyze with AI'}</span>
+                        </button>
+                      )}
 
-        {/* AI Agent Status / Metrics Summary */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-card-bg p-6 rounded-xl border border-border-light shadow-sm">
-            <h3 className="text-sm font-bold text-navy-dark mb-4 border-b border-border-light/60 pb-2">Autonomous Agent State</h3>
-            
-            <div className="space-y-4 text-xs">
-              <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">TOTAL CASES TRACKED</span>
-                <span className="text-base font-extrabold text-navy-dark">{cases.length} cases</span>
-              </div>
+                      {/* Stage 2 & 3: Analyze / Decide -> Execute */}
+                      {(c.status === 'ANALYZING' || c.status === 'ACTION_RECOMMENDED') && (
+                        <button
+                          onClick={() => handleExecuteRecovery(c.id, c.recommendedAction || 'RETRY_PAYMENT')}
+                          disabled={processingCaseId === c.id}
+                          className="px-4 py-2 bg-navy-dark hover:bg-navy-dark/90 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                          <Bot size={14} />
+                          <span>{processingCaseId === c.id ? 'Executing...' : `Execute ${c.recommendedAction || 'Recovery'}`}</span>
+                        </button>
+                      )}
 
-              <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">AWAITING MERCHANT APPROVAL</span>
-                <span className={`text-base font-extrabold ${approvalCases.length > 0 ? 'text-warning-amber' : 'text-navy-dark'}`}>
-                  {approvalCases.length} holds active
-                </span>
-              </div>
+                      {/* Stage 4: Approval */}
+                      {c.status === 'AWAITING_APPROVAL' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleApproveCase(c.id)}
+                            disabled={processingCaseId === c.id}
+                            className="px-3 py-1.5 bg-success-green hover:bg-success-green/90 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm cursor-pointer disabled:opacity-50"
+                          >
+                            <Check size={14} />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            onClick={() => handleRejectCase(c.id)}
+                            disabled={processingCaseId === c.id}
+                            className="px-3 py-1.5 bg-error-red/10 text-error-red hover:bg-error-red/20 border border-error-red/20 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          >
+                            <X size={14} />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      )}
 
-              <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">CURRENTLY IN FLIGHT</span>
-                <span className="text-base font-extrabold text-primary">{executeCases.length} executing</span>
-              </div>
-
-              <div className="p-3 bg-bg-light rounded-lg border border-border-light">
-                <span className="text-[10px] text-secondary-text font-bold block mb-1">VERIFIED RECOVERIES</span>
-                <span className="text-base font-extrabold text-success-green">{verifyCases.length} confirmed</span>
-              </div>
-            </div>
-          </div>
+                      {/* Stage 5 & 6: Inspect details */}
+                      <button
+                        onClick={() => onNavigate && onNavigate(`#/payments/${c.transactionId}`)}
+                        className="p-2 text-secondary-text hover:text-navy-dark hover:bg-bg-light rounded-lg transition"
+                        title="View Full Payment Telemetry"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

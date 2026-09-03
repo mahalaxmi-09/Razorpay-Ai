@@ -19,6 +19,9 @@ import SettingsPage from './pages/Settings';
 import Help from './pages/Help';
 
 // Services / Data
+import { isDemoMode } from './config/dataMode';
+import { transactionsData } from './data/transactions';
+import { notificationsData } from './data/notifications';
 import { api } from './lib/api';
 
 export default function App() {
@@ -40,30 +43,36 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
-  // Load live transaction and alert feeds from PostgreSQL database
+  // Load transaction and alert feeds based on data mode
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const loadBackendData = async () => {
+    const loadData = async () => {
+      if (isDemoMode()) {
+        setTransactions(transactionsData);
+        setNotifications(notificationsData);
+        return;
+      }
+
       try {
         const txns = await api.getPayments();
-        setTransactions(txns);
+        setTransactions(Array.isArray(txns) ? txns : []);
 
         const alerts = await api.getAlerts();
-        setNotifications(alerts.map(n => ({
+        setNotifications(Array.isArray(alerts) ? alerts.map(n => ({
           id: n.id,
           type: n.type === 'ACTION_REQUIRED' ? 'critical' : (n.type === 'RECOVERY_PENDING' ? 'warning' : 'success'),
           title: n.title,
           message: n.message,
           time: 'Just now',
           read: n.read
-        })));
+        })) : []);
       } catch (err) {
         console.error('Failed to load backend records:', err.message);
       }
     };
 
-    loadBackendData();
+    loadData();
   }, [isAuthenticated, currentPath]);
 
   // Theme Toggler effect using data-theme attribute on documentElement
@@ -99,73 +108,47 @@ export default function App() {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    
-    // Check if initial hash is set, if not default
-    if (!window.location.hash) {
-      window.location.hash = '#/dashboard';
-    }
-
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Programmatic navigation handler
   const handleNavigate = (path) => {
     window.location.hash = path;
+    setCurrentPath(path);
+    setIsSidebarOpen(false);
+    window.scrollTo(0, 0);
   };
 
-  const handleLogin = (user) => {
-    const validName = user && typeof user === 'string' && user.trim() ? user.trim() : 'Mounika';
-    setMerchantName(validName);
-    localStorage.setItem('merchantName', validName);
+  const handleLogin = (userCredentials) => {
     setIsAuthenticated(true);
-    handleNavigate('#/dashboard');
+    if (userCredentials?.merchantName) {
+      setMerchantName(userCredentials.merchantName);
+      localStorage.setItem('merchantName', userCredentials.merchantName);
+    }
   };
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
-    handleNavigate('#/login');
+    localStorage.removeItem('merchantName');
+    window.location.hash = '#/login';
   };
 
-  // Auth Guard
-  useEffect(() => {
-    const publicRoutes = ['#/login', '#/signup'];
-    if (!isAuthenticated && !publicRoutes.includes(currentPath)) {
-      handleNavigate('#/login');
-    }
-  }, [currentPath, isAuthenticated]);
-
-  // Page Title Resolver
-  const getPageTitle = () => {
-    if (currentPath.startsWith('#/payments/')) return 'Payment Detail';
-    
-    switch (currentPath) {
-      case '#/dashboard': return 'Dashboard';
-      case '#/payments': return 'Payments';
-      case '#/recovery': return 'Recovery Agent';
-      case '#/analytics': return 'Analytics';
-      case '#/alerts': return 'Alerts';
-      case '#/audit': return 'Audit Logs';
-      case '#/settings': return 'Settings';
-      case '#/help': return 'Help & Support';
-      default: return 'RazorRecover AI';
-    }
-  };
-
-  // Render active page component
+  // Route Views Renderer
   const renderContent = () => {
     if (currentPath.startsWith('#/payments/')) {
-      const transactionId = currentPath.split('/').pop();
+      const paymentId = currentPath.replace('#/payments/', '');
       return (
         <PaymentDetail 
-          transactionId={transactionId} 
-          onNavigate={handleNavigate} 
+          paymentId={paymentId} 
           currency={currency} 
-          transactions={transactions}
+          onNavigate={handleNavigate} 
           onUpdateStatus={handleUpdateTransactionStatus}
         />
       );
     }
 
     switch (currentPath) {
+      case '#/':
       case '#/dashboard':
         return (
           <Dashboard 
@@ -181,14 +164,13 @@ export default function App() {
           <Payments 
             currency={currency} 
             onNavigate={handleNavigate} 
-            transactions={transactions}
+            transactions={transactions} 
           />
         );
       case '#/recovery':
         return (
           <RecoveryAgent 
             onNavigate={handleNavigate} 
-            transactions={transactions}
           />
         );
       case '#/analytics':
@@ -204,7 +186,7 @@ export default function App() {
             onNavigate={handleNavigate} 
           />
         );
-      case '#/audit':
+      case '#/audit-logs':
         return (
           <AuditLogs 
             currency={currency} 
@@ -213,10 +195,15 @@ export default function App() {
       case '#/settings':
         return (
           <SettingsPage 
-            lang={lang} 
-            onLangChange={setLang} 
-            currency={currency} 
-            onCurrencyChange={setCurrency} 
+            lang={lang}
+            onLangChange={setLang}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            merchantName={merchantName}
+            onMerchantNameChange={(newName) => {
+              setMerchantName(newName);
+              localStorage.setItem('merchantName', newName);
+            }}
           />
         );
       case '#/help':
@@ -234,12 +221,43 @@ export default function App() {
     }
   };
 
-  // Public View: Login / Signup Layout
+  // Get current page display title
+  const getPageTitle = () => {
+    const t = requireTranslations()[lang] || requireTranslations()['English'];
+    
+    if (currentPath.startsWith('#/payments/')) {
+      return 'Payment Investigation';
+    }
+
+    switch (currentPath) {
+      case '#/':
+      case '#/dashboard':
+        return t.dashboard;
+      case '#/payments':
+        return t.payments;
+      case '#/recovery':
+        return t.recoveryAgent;
+      case '#/analytics':
+        return t.analytics;
+      case '#/alerts':
+        return t.alerts;
+      case '#/audit-logs':
+        return t.auditLogs;
+      case '#/settings':
+        return t.settings;
+      case '#/help':
+        return t.helpSupport;
+      default:
+        return t.dashboard;
+    }
+  };
+
+  // If not authenticated, render Login or Signup views
   if (!isAuthenticated) {
     if (currentPath === '#/signup') {
       return (
         <Signup 
-          onLogin={handleLogin} 
+          onSignup={handleLogin} 
           onNavigate={handleNavigate} 
         />
       );
@@ -252,33 +270,30 @@ export default function App() {
     );
   }
 
-  // Private View: Main Application Layout
   return (
-    <div className="flex h-screen bg-bg-light overflow-hidden transition-colors duration-200">
-      
-      {/* Sidebar Panel */}
+    <div className="flex h-screen bg-bg-light overflow-hidden font-sans">
+      {/* Sidebar Navigation */}
       <Sidebar 
         currentPath={currentPath} 
         onNavigate={handleNavigate} 
-        lang={lang} 
-        translations={requireTranslations()} 
+        lang={lang}
         isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
-        transactionsCount={transactions.length}
+        onClose={() => setIsSidebarOpen(false)}
+        notificationsCount={notifications.filter(n => !n.read).length}
+        onSignOut={handleSignOut}
       />
 
-      {/* Main Container Wrapper */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        
-        {/* Header toolbar */}
+      {/* Main Workspace Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Workspace Header */}
         <Header 
           pageTitle={getPageTitle()} 
           lang={lang} 
           onLangChange={setLang} 
           currency={currency} 
           onCurrencyChange={setCurrency} 
-          merchantName={merchantName} 
-          onNavigate={handleNavigate} 
+          merchantName={merchantName}
+          onNavigate={handleNavigate}
           onSignOut={handleSignOut}
           notifications={notifications}
           setNotifications={setNotifications}

@@ -1,27 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import AuditTable from '../components/AuditTable';
+import { isDemoMode } from '../config/dataMode';
+import { auditLogsData } from '../data/audit';
 import { api } from '../lib/api';
 
 export default function AuditLogs({ currency }) {
+  const isDemo = isDemoMode();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch audit logs dynamically on mount
   useEffect(() => {
     const fetchLogs = async () => {
+      if (isDemo) {
+        setLogs(auditLogsData);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const data = await api.getAuditLogs();
-        setLogs(data);
+        setLogs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load audit logs feed:', err.message);
+        setLogs([]);
       } finally {
         setLoading(false);
       }
     };
     
     fetchLogs();
-  }, []);
+  }, [isDemo]);
 
   return (
     <div className="space-y-6">
