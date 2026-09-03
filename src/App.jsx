@@ -134,10 +134,12 @@ export default function App() {
   const handleLogin = (userCredentials) => {
     setIsAuthenticated(true);
     localStorage.setItem('isAuthenticated', 'true');
-    if (userCredentials?.merchantName) {
-      setMerchantName(userCredentials.merchantName);
-      localStorage.setItem('merchantName', userCredentials.merchantName);
-    }
+    const name = typeof userCredentials === 'string' 
+      ? userCredentials 
+      : (userCredentials?.merchantName || userCredentials?.fullName || 'Mounika');
+    setMerchantName(name);
+    localStorage.setItem('merchantName', name);
+    window.location.hash = '#/dashboard';
   };
 
   const handleSignOut = () => {

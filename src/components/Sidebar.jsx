@@ -11,25 +11,42 @@ import {
   TrendingUp,
   X
 } from 'lucide-react';
+import { translations as defaultTranslations } from '../services/mockData';
 
-export default function Sidebar({ currentPath, onNavigate, lang, translations, isOpen, setIsOpen, transactionsCount = 0 }) {
+export default function Sidebar({ 
+  currentPath, 
+  onNavigate, 
+  lang = 'English', 
+  translations, 
+  isOpen = false, 
+  onClose, 
+  setIsOpen, 
+  notificationsCount = 0 
+}) {
+  const t = (translations && translations[lang]) || defaultTranslations[lang] || defaultTranslations['English'];
+
   const menuItems = [
-    { name: translations[lang]?.dashboard || 'Dashboard', path: '#/dashboard', icon: LayoutDashboard },
-    { name: translations[lang]?.payments || 'Payments', path: '#/payments', icon: CreditCard },
-    { name: translations[lang]?.recoveryAgent || 'Recovery Agent', path: '#/recovery', icon: Bot },
-    { name: translations[lang]?.analytics || 'Analytics', path: '#/analytics', icon: BarChart3 },
-    { name: translations[lang]?.alerts || 'Alerts', path: '#/alerts', icon: Bell },
-    { name: translations[lang]?.auditLogs || 'Audit Logs', path: '#/audit', icon: ClipboardList },
+    { name: t?.dashboard || 'Dashboard', path: '#/dashboard', icon: LayoutDashboard },
+    { name: t?.payments || 'Payments', path: '#/payments', icon: CreditCard },
+    { name: t?.recoveryAgent || 'Recovery Agent', path: '#/recovery', icon: Bot },
+    { name: t?.analytics || 'Analytics', path: '#/analytics', icon: BarChart3 },
+    { name: t?.alerts || 'Alerts', path: '#/alerts', icon: Bell, badge: notificationsCount },
+    { name: t?.auditLogs || 'Audit Logs', path: '#/audit-logs', icon: ClipboardList },
   ];
 
   const bottomItems = [
-    { name: translations[lang]?.settings || 'Settings', path: '#/settings', icon: Settings },
-    { name: translations[lang]?.helpSupport || 'Help & Support', path: '#/help', icon: HelpCircle },
+    { name: t?.settings || 'Settings', path: '#/settings', icon: Settings },
+    { name: t?.helpSupport || 'Help & Support', path: '#/help', icon: HelpCircle },
   ];
+
+  const handleClose = () => {
+    if (onClose) onClose();
+    if (setIsOpen) setIsOpen(false);
+  };
 
   const handleLinkClick = (path) => {
     onNavigate(path);
-    setIsOpen(false); // Close sidebar on mobile
+    handleClose();
   };
 
   return (
@@ -38,7 +55,7 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
       {isOpen && (
         <div 
           className="fixed inset-0 bg-navy-dark/40 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={handleClose}
         />
       )}
 
@@ -65,8 +82,8 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
 
             {/* Mobile close button */}
             <button 
-              onClick={() => setIsOpen(false)}
-              className="lg:hidden p-1.5 text-secondary-text hover:text-navy-dark rounded-md"
+              onClick={handleClose}
+              className="lg:hidden p-1.5 text-secondary-text hover:text-navy-dark rounded-md cursor-pointer"
             >
               <X size={18} />
             </button>
@@ -76,22 +93,29 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentPath === item.path;
+              const isActive = currentPath === item.path || (item.path === '#/dashboard' && (currentPath === '#/' || currentPath === ''));
 
               return (
                 <button
                   key={item.path}
                   onClick={() => handleLinkClick(item.path)}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer
+                    w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer
                     ${isActive 
                       ? 'bg-primary text-white shadow-md shadow-primary/20' 
                       : 'text-secondary-text hover:text-navy-dark hover:bg-bg-light'
                     }
                   `}
                 >
-                  <Icon size={18} />
-                  <span>{item.name}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon size={18} />
+                    <span>{item.name}</span>
+                  </div>
+                  {item.badge > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-white text-primary' : 'bg-primary text-white'}`}>
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -126,13 +150,11 @@ export default function Sidebar({ currentPath, onNavigate, lang, translations, i
           
           <div className="mt-4 p-3 bg-bg-light border border-border-light rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <span className={`w-2 h-2 rounded-full ${transactionsCount > 0 ? 'bg-success-green animate-pulse' : 'bg-secondary-text'}`}></span>
-              <span className="text-[10px] font-bold text-navy-dark uppercase tracking-wider">AI Recovery Active</span>
+              <span className="w-2 h-2 rounded-full bg-success-green animate-pulse"></span>
+              <span className="text-[10px] font-bold text-navy-dark uppercase tracking-wider">Razorpay Test Mode</span>
             </div>
             <p className="text-[11px] text-secondary-text">
-              {transactionsCount > 0 
-                ? `Monitoring ${transactionsCount} transaction${transactionsCount > 1 ? 's' : ''} for risk factors.`
-                : 'No transaction data connected.'}
+              Autonomous safety guardrails active across all recovery workflows.
             </p>
           </div>
         </div>
