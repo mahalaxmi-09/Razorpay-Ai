@@ -4,6 +4,14 @@
 
 export const notificationsData = [
   {
+    id: 'NOTIF_SETTLE_01',
+    type: 'success',
+    title: 'Settlement Verified: ₹18,500',
+    message: 'Settlement verified for ₹18,500. The payment was successfully reconciled in Razorpay Test Mode. No duplicate customer charge was created.',
+    time: 'Just now',
+    read: false
+  },
+  {
     id: 'NOTIF_01',
     type: 'critical',
     title: 'High-Value Recovery Approval Required',

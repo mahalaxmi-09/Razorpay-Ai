@@ -2,10 +2,45 @@
  * Central Recovery Agent Dataset - RazorRecover AI
  * 
  * Contains realistic Test Mode recovery cases for the 6-stage pipeline,
- * including the simulated "Wrong Number Payment" test scenario.
+ * including simulated test scenarios:
+ * 1. "Customer Debited - Merchant Settlement Missing" (CASE_SETTLE_001)
+ * 2. "Wrong Number Payment" (CASE_WRONG_001)
  */
 
 export const recoveryCasesData = [
+  {
+    id: 'CASE_SETTLE_001',
+    transactionId: 'TXN_SETTLE_001',
+    status: 'VERIFYING',
+    priority: 'HIGH',
+    attempts: 0,
+    maxAttempts: 3,
+    approvalRequired: false,
+    guardrailBlocked: false,
+    guardrailRule: 'DUPLICATE PAYMENT PREVENTION',
+    recommendedAction: 'VERIFY_SETTLEMENT',
+    currentAction: 'VERIFY_SETTLEMENT',
+    createdAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    transaction: {
+      id: 'TXN_SETTLE_001',
+      providerPaymentId: 'pay_TEST_SETTLE_001',
+      amount: 1850000, // ₹18,500
+      currency: 'INR',
+      status: 'CAPTURED',
+      merchantSettlementStatus: 'PENDING',
+      customerDebited: true,
+      failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+      customer: { name: 'Rahul Sharma', email: 'rahul.sharma@gmail.com' }
+    },
+    aiDecision: {
+      rootCause: 'Payment capture succeeded, but settlement confirmation is unavailable or delayed.',
+      riskSummary: 'Reconciliation mismatch between customer payment state and merchant settlement state.',
+      confidence: 0.96,
+      modelUsed: 'gpt-4o',
+      reasoningSummary: 'DO NOT retry the customer payment immediately. 1. Verify payment provider state. 2. Check settlement status. 3. Prevent duplicate recovery. 4. Initiate safe settlement reconciliation.',
+      merchantMessage: 'Verify & reconcile settlement. Duplicate payment prevention guardrail active.'
+    }
+  },
   {
     id: 'CASE_WRONG_001',
     transactionId: 'TXN_WRONG_001',

@@ -416,6 +416,41 @@ async function runTests() {
     assert(guardrailCheck12.guardrailResult === 'GUARDRAIL_BLOCKED', 'TEST 12: Guardrail result is GUARDRAIL_BLOCKED');
     assert(guardrailCheck12.requiresRecipientVerification === true, 'TEST 12: Requires explicit recipient verification before retry');
 
+    // TEST 13: Customer Debited - Settlement Missing Guardrail & Settlement Reconciliation
+    const testTxn13 = await prisma.transaction.create({
+      data: {
+        id: 'TXN_TEST_SETTLE_001_' + Date.now(),
+        providerPaymentId: 'pay_SETTLE_' + Date.now(),
+        amount: 1850000, // ₹18,500
+        currency: 'INR',
+        status: 'CAPTURED',
+        customerDebited: true,
+        merchantSettlementStatus: 'PENDING',
+        failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+        paymentMethod: 'UPI',
+        merchantId: 'test_merchant_1',
+        customerId: 'cust_test_1'
+      }
+    });
+
+    // Guardrail Check: Payment retry MUST be strictly BLOCKED by Duplicate Payment Prevention
+    const guardrailCheck13 = await guardrailsService.validateAction({
+      transaction: testTxn13,
+      recoveryCase: { id: 'case_settle_test', status: 'OPEN', attempts: 0 },
+      actionType: 'RETRY_PAYMENT',
+      aiDecision: {
+        rootCause: 'Payment capture succeeded, but settlement confirmation is unavailable or delayed.',
+        confidence: 0.96,
+        riskLevel: 'HIGH'
+      },
+      actor: 'AI'
+    });
+
+    assert(guardrailCheck13.allowed === false, 'TEST 13: Captured & debited payment strictly blocks automatic retry');
+    assert(guardrailCheck13.guardrailResult === 'BLOCKED', 'TEST 13: Guardrail result is BLOCKED');
+    assert(guardrailCheck13.guardrailRule === 'DUPLICATE_PAYMENT_PREVENTION', 'TEST 13: Guardrail rule is DUPLICATE_PAYMENT_PREVENTION');
+    assert(guardrailCheck13.recommendedAlternative === 'VERIFY_SETTLEMENT', 'TEST 13: Recommended alternative is strictly VERIFY_SETTLEMENT');
+
     console.log(`\n🏁 Test Report: ${passed} passed, ${failed} failed.`);
 
     if (failed > 0) {

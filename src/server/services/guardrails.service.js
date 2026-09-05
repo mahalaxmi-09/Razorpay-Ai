@@ -71,6 +71,7 @@ export const guardrailsService = {
       return {
         allowed: false,
         guardrailResult: 'BLOCKED',
+        guardrailRule: 'DUPLICATE_PAYMENT_PREVENTION',
         reason: 'Payment has already been captured or customer was debited. Automatic retry is strictly blocked to prevent duplicate charging.',
         recommendedAlternative: 'VERIFY_SETTLEMENT'
       };

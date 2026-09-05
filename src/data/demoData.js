@@ -2,7 +2,9 @@
  * Centralized Controlled DEMO / TEST Dataset for RazorRecover AI
  * 
  * Contains all exact approved Dashboard demo/testing values,
- * including the simulated "Wrong Number Payment" test scenario.
+ * including high-value simulated scenarios:
+ * 1. "Customer Debited - Merchant Settlement Missing" (₹18,500 - TXN_SETTLE_001)
+ * 2. "Wrong Number Payment" (₹4,500 - TXN_WRONG_001)
  */
 
 export const dashboardDemoData = {
@@ -19,6 +21,13 @@ export const dashboardDemoData = {
     increasePercent: 18,
 
     items: [
+      {
+        amount: 18500,
+        label: "Verifying Settlement",
+        description: "Customer debited; verifying merchant settlement batch in Test Mode",
+        time: "3 mins ago",
+        type: "monitoring"
+      },
       {
         amount: 5000,
         label: "Recovered",
@@ -61,6 +70,21 @@ export const dashboardDemoData = {
 
   priorityCases: [
     {
+      id: "TXN_SETTLE_001",
+      customer: "Rahul Sharma",
+      amount: 18500,
+      priority: "HIGH PRIORITY",
+      subheading: "Customer Debited — Settlement Missing",
+      confidence: 96,
+      issue: "Merchant settlement not confirmed",
+      paymentStatus: "CAPTURED",
+      customerDebited: "Yes",
+      merchantSettlement: "Pending",
+      action: "Verify & reconcile settlement",
+      status: "UNDER VERIFICATION",
+      guardrailRule: "DUPLICATE PAYMENT PREVENTION"
+    },
+    {
       id: "TXN_WRONG_001",
       customer: "Ananya Reddy",
       amount: 4500,
@@ -94,7 +118,7 @@ export const dashboardDemoData = {
 
   aiInsight: {
     severity: "WARNING",
-    message: "₹4,500 payment attempt detected with an incorrect recipient identifier. Automatic recovery was blocked by recipient verification guardrails."
+    message: "₹18,500 payment was captured and the customer was debited, but merchant settlement was not confirmed. Automatic retry was blocked to prevent duplicate payment. Settlement verification has been initiated."
   },
 
   // Demo chart timeframes

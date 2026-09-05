@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, ArrowUpRight, Inbox, ShieldAlert } from 'lucide-react';
+import { AlertCircle, ArrowUpRight, Inbox, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
 import { isDemoMode } from '../config/dataMode';
 import { dashboardDemoData } from '../data/demoData';
@@ -43,15 +43,18 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
               const isFirst = index === 0;
 
               if (isFirst) {
-                const confidenceVal = c.confidence ? `${c.confidence}%` : (c.aiConfidence || '92%');
-                const issueText = c.issue || c.failureReason || 'Incorrect UPI recipient / wrong number';
-                const actionLabel = c.action || 'Verify recipient before retry';
-                const customerName = c.customer || c.customerName || 'Ananya Reddy';
-                const statusLabel = c.status || 'GUARDRAIL BLOCKED';
+                const confidenceVal = c.confidence ? `${c.confidence}%` : (c.aiConfidence || '96%');
+                const issueText = c.issue || c.failureReason || 'Merchant settlement not confirmed';
+                const actionLabel = c.action || 'Verify & reconcile settlement';
+                const customerName = c.customer || c.customerName || 'Rahul Sharma';
+                const statusLabel = c.status || 'UNDER VERIFICATION';
+                const subheading = c.subheading || 'Customer Debited — Settlement Missing';
+
+                const isRecovered = statusLabel === 'VERIFIED RECOVERED' || statusLabel === 'VERIFIED_RECOVERED';
 
                 return (
                   <div key={index} className="p-4 bg-error-red/[0.02] border border-error-red/20 rounded-xl">
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-[10px] text-error-red font-extrabold uppercase tracking-widest flex items-center gap-1">
                         <AlertCircle size={10} /> {c.priority || 'HIGH PRIORITY'}
                       </span>
@@ -59,12 +62,23 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                         AI Confidence: <strong className="text-navy-dark font-extrabold">{confidenceVal}</strong>
                       </span>
                     </div>
+
+                    {subheading && (
+                      <span className="text-[11px] font-bold text-navy-dark block mb-2">
+                        {subheading}
+                      </span>
+                    )}
                     
                     <div className="flex items-baseline justify-between mb-2">
                       <span className="text-xl font-black text-navy-dark">{formatCurrency(c.amount, currency)}</span>
                       {statusLabel && (
-                        <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-warning-amber/10 text-warning-amber border border-warning-amber/20 flex items-center gap-1">
-                          <ShieldAlert size={10} /> {statusLabel}
+                        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border flex items-center gap-1 ${
+                          isRecovered 
+                            ? 'bg-success-green/10 text-success-green border-success-green/20' 
+                            : 'bg-warning-amber/10 text-warning-amber border-warning-amber/20'
+                        }`}>
+                          {isRecovered ? <CheckCircle2 size={10} /> : <ShieldAlert size={10} />}
+                          {statusLabel}
                         </span>
                       )}
                     </div>

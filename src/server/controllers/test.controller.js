@@ -562,6 +562,69 @@ export const testController = {
         }
       });
 
+      // Scenario 13: Customer Debited - Merchant Settlement Missing (GUARDRAIL BLOCKED - DUPLICATE PAYMENT PREVENTION)
+      const customerRahul = await prisma.customer.create({
+        data: { name: 'Rahul Sharma', email: 'rahul.sharma@gmail.com', phone: '+919876543210' }
+      });
+
+      const txnSettle = await prisma.transaction.create({
+        data: {
+          id: 'TXN_SETTLE_001',
+          providerPaymentId: 'pay_TEST_SETTLE_001',
+          merchantId: merchant.id,
+          customerId: customerRahul.id,
+          amount: 1850000, // ₹18,500
+          currency: 'INR',
+          status: 'CAPTURED',
+          paymentMethod: 'UPI',
+          captured: true,
+          customerDebited: true,
+          riskStatus: 'HIGH',
+          merchantSettlementStatus: 'PENDING',
+          failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+          retryCount: 0,
+          createdAt: new Date(Date.now() - 3 * 60 * 1000)
+        }
+      });
+      txnCount++;
+
+      const riskSettle = await prisma.revenueRiskEvent.create({
+        data: {
+          transactionId: txnSettle.id,
+          merchantId: merchant.id,
+          riskType: 'SETTLEMENT_DELAYED',
+          riskLevel: 'High',
+          amountAtRisk: 1850000,
+          reason: 'Customer payment captured but merchant settlement confirmation is missing.',
+          status: 'OPEN',
+          detectedAt: new Date(Date.now() - 3 * 60 * 1000)
+        }
+      });
+      riskCount++;
+
+      const caseSettle = await prisma.recoveryCase.create({
+        data: {
+          riskEventId: riskSettle.id,
+          transactionId: txnSettle.id,
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_SETTLEMENT',
+          createdAt: new Date(Date.now() - 3 * 60 * 1000)
+        }
+      });
+      caseCount++;
+
+      await prisma.aIDecision.create({
+        data: {
+          recoveryCaseId: caseSettle.id,
+          rootCause: 'Payment capture succeeded, but settlement confirmation is unavailable or delayed.',
+          confidence: 0.96,
+          modelUsed: 'gpt-4o',
+          reasoningSummary: 'DO NOT RETRY PAYMENT. Customer account was debited and payment is captured. Initiating automatic payment retry would cause duplicate charge. Execute settlement status verification & reconciliation.',
+          merchantMessage: 'Payment captured from customer but settlement pending. Duplicate payment prevention guardrail triggered. Verifying settlement status.'
+        }
+      });
+
       // Populate Notifications
       await prisma.notification.createMany({
         data: [
@@ -595,6 +658,14 @@ export const testController = {
             title: 'Automatic Retry Blocked: Recipient Mismatch',
             message: 'TXN_WRONG_001 (₹4,500) - Recipient verification required before retry to prevent misrouted funds.',
             severity: 'warning',
+            read: false
+          },
+          {
+            merchantId: merchant.id,
+            type: 'SETTLEMENT_VERIFIED',
+            title: 'Settlement Verified: ₹18,500',
+            message: 'TXN_SETTLE_001 (₹18,500) - Customer debited successfully. Settlement reconciliation confirmed. Duplicate payment prevented.',
+            severity: 'success',
             read: false
           }
         ]
@@ -651,6 +722,55 @@ export const testController = {
             eventType: 'RECIPIENT_VERIFICATION_REQUIRED',
             actor: 'GUARDRAILS_ENGINE',
             description: 'Case marked AWAITING_APPROVAL. Customer recipient verification required before safe retry.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'PAYMENT_CAPTURED_DETECTED',
+            actor: 'TELEMETRY_INGESTION',
+            description: 'Customer debited ₹18,500 (UPI). Capture confirmed in Razorpay Test Mode.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'SETTLEMENT_MISSING_FLAGGED',
+            actor: 'RECONCILIATION_ENGINE',
+            description: 'Settlement status not confirmed for ₹18,500 transaction. Case flagged as high-risk.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'AI_ROOT_CAUSE_ANALYSIS',
+            actor: 'OPENAI_GPT4O',
+            description: 'AI diagnosed Settlement Delay (96% confidence). Recommendation: VERIFY & RECONCILE, DO NOT RETRY PAYMENT.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'DUPLICATE_PAYMENT_PREVENTED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Duplicate Payment Prevention guardrail triggered. Automatic payment retry strictly BLOCKED.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'SETTLEMENT_VERIFICATION_INITIATED',
+            actor: 'RECOVERY_AGENT',
+            description: 'Recovery Agent initiated settlement sync with banking rail.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'SETTLEMENT_RECONCILED',
+            actor: 'SYSTEM',
+            description: 'Settlement verified and matched against nodal account ledger. Funds reconciled: ₹18,500.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_SETTLE_001',
+            eventType: 'MERCHANT_NOTIFIED',
+            actor: 'NOTIFICATION_SERVICE',
+            description: 'Merchant notified: ₹18,500 settlement confirmed. Duplicate payment prevented.'
           }
         ]
       });
@@ -794,6 +914,155 @@ export const testController = {
       return res.status(500).json({
         success: false,
         error: { code: 'SIMULATE_WRONG_NUMBER_ERROR', message: error.message }
+      });
+    }
+  },
+
+  // 4. Dedicated Endpoint to Simulate "Customer Debited - Merchant Settlement Missing" Scenario
+  simulateSettlementMissing: async (req, res) => {
+    try {
+      let merchant = await prisma.merchant.findFirst();
+      if (!merchant) {
+        const user = await prisma.user.create({ data: { name: 'Mounika Merchant', email: 'mounika@razorrecover.ai' } });
+        merchant = await prisma.merchant.create({ data: { userId: user.id, name: 'Mounika Enterprises', email: 'mounika@razorrecover.ai' } });
+      }
+
+      let customer = await prisma.customer.findFirst({ where: { name: 'Rahul Sharma' } });
+      if (!customer) {
+        customer = await prisma.customer.create({ data: { name: 'Rahul Sharma', email: 'rahul.sharma@gmail.com', phone: '+919876543210' } });
+      }
+
+      // 1. Create or Reset Transaction TXN_SETTLE_001
+      const txn = await prisma.transaction.upsert({
+        where: { id: 'TXN_SETTLE_001' },
+        update: {
+          status: 'CAPTURED',
+          customerDebited: true,
+          merchantSettlementStatus: 'PENDING',
+          failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+          riskStatus: 'HIGH'
+        },
+        create: {
+          id: 'TXN_SETTLE_001',
+          providerPaymentId: 'pay_TEST_SETTLE_001',
+          merchantId: merchant.id,
+          customerId: customer.id,
+          amount: 1850000, // ₹18,500
+          currency: 'INR',
+          status: 'CAPTURED',
+          paymentMethod: 'UPI',
+          captured: true,
+          customerDebited: true,
+          riskStatus: 'HIGH',
+          merchantSettlementStatus: 'PENDING',
+          failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+          retryCount: 0
+        }
+      });
+
+      // 2. Create Risk Event
+      const risk = await prisma.revenueRiskEvent.create({
+        data: {
+          transactionId: txn.id,
+          merchantId: merchant.id,
+          riskType: 'SETTLEMENT_DELAYED',
+          riskLevel: 'High',
+          amountAtRisk: 1850000,
+          reason: 'Customer payment captured but merchant settlement confirmation is missing.',
+          status: 'OPEN'
+        }
+      });
+
+      // 3. Create Recovery Case in AWAITING_APPROVAL (Guardrail Blocked)
+      const recoveryCase = await prisma.recoveryCase.upsert({
+        where: { transactionId: txn.id },
+        update: {
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_SETTLEMENT'
+        },
+        create: {
+          riskEventId: risk.id,
+          transactionId: txn.id,
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_SETTLEMENT'
+        }
+      });
+
+      // 4. Create Audit Logs
+      await prisma.auditLog.createMany({
+        data: [
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'PAYMENT_CAPTURED_DETECTED',
+            actor: 'TELEMETRY_INGESTION',
+            description: 'Customer debited ₹18,500 (UPI). Capture confirmed in Razorpay Test Mode.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'SETTLEMENT_MISSING_FLAGGED',
+            actor: 'RECONCILIATION_ENGINE',
+            description: 'Settlement status not confirmed for ₹18,500 transaction. Case flagged as high-risk.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'AI_ROOT_CAUSE_ANALYSIS',
+            actor: 'OPENAI_GPT4O',
+            description: 'AI diagnosed Settlement Delay (96% confidence). Recommendation: VERIFY & RECONCILE, DO NOT RETRY PAYMENT.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'DUPLICATE_PAYMENT_PREVENTED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Duplicate Payment Prevention guardrail triggered. Automatic payment retry strictly BLOCKED.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'SETTLEMENT_VERIFICATION_INITIATED',
+            actor: 'RECOVERY_AGENT',
+            description: 'Recovery Agent initiated settlement sync with banking rail.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'SETTLEMENT_RECONCILED',
+            actor: 'SYSTEM',
+            description: 'Settlement verified and matched against nodal account ledger. Funds reconciled: ₹18,500.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'MERCHANT_NOTIFIED',
+            actor: 'NOTIFICATION_SERVICE',
+            description: 'Merchant notified: ₹18,500 settlement confirmed. Duplicate payment prevented.'
+          }
+        ]
+      });
+
+      return res.json({
+        success: true,
+        scenario: 'Customer Debited - Merchant Settlement Missing',
+        transactionId: txn.id,
+        amount: '₹18,500',
+        customer: 'Rahul Sharma',
+        failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+        aiConfidence: '96%',
+        guardrailStatus: 'GUARDRAIL_BLOCKED',
+        guardrailRule: 'Duplicate Payment Prevention (status=CAPTURED, customerDebited=true -> block retry, route to verify settlement)',
+        recommendedAction: 'VERIFY_SETTLEMENT',
+        recoveryCase
+      });
+    } catch (error) {
+      console.error('testController.simulateSettlementMissing error:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'SIMULATE_SETTLEMENT_MISSING_ERROR', message: error.message }
       });
     }
   }

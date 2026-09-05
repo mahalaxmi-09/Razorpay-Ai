@@ -2,10 +2,29 @@
  * Central Transactions Dataset - RazorRecover AI
  * 
  * Contains realistic Test Mode transactions representing the Buildathon scenarios,
- * including the simulated "Wrong Number Payment" test scenario.
+ * including simulated test scenarios:
+ * 1. "Customer Debited - Merchant Settlement Missing" (TXN_SETTLE_001)
+ * 2. "Wrong Number Payment" (TXN_WRONG_001)
  */
 
 export const transactionsData = [
+  {
+    id: 'TXN_SETTLE_001',
+    customerName: 'Rahul Sharma',
+    amount: 18500,
+    currency: 'INR',
+    status: 'Settlement Pending',
+    rawStatus: 'CAPTURED',
+    merchantSettlementStatus: 'PENDING',
+    merchantSettlement: 'Pending',
+    customerDebited: 'Yes',
+    paymentMethod: 'UPI',
+    risk: 'High',
+    riskStatus: 'HIGH',
+    date: '3 mins ago',
+    failureReason: 'Customer payment captured but merchant settlement confirmation is missing.',
+    riskCategory: 'Settlement Reconciliation Mismatch'
+  },
   {
     id: 'TXN_WRONG_001',
     customerName: 'Ananya Reddy',
