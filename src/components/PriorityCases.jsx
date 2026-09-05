@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, ArrowUpRight, Inbox } from 'lucide-react';
+import { AlertCircle, ArrowUpRight, Inbox, ShieldAlert } from 'lucide-react';
 import { formatCurrency } from '../services/mockData';
 import { isDemoMode } from '../config/dataMode';
 import { dashboardDemoData } from '../data/demoData';
@@ -43,9 +43,11 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
               const isFirst = index === 0;
 
               if (isFirst) {
-                const confidenceVal = c.confidence ? `${c.confidence}%` : (c.aiConfidence || '94%');
-                const issueText = c.issue || c.failureReason || 'Critical compliance & fraud risk';
-                const actionLabel = c.action || 'Trigger Autonomous Recovery';
+                const confidenceVal = c.confidence ? `${c.confidence}%` : (c.aiConfidence || '92%');
+                const issueText = c.issue || c.failureReason || 'Incorrect UPI recipient / wrong number';
+                const actionLabel = c.action || 'Verify recipient before retry';
+                const customerName = c.customer || c.customerName || 'Ananya Reddy';
+                const statusLabel = c.status || 'GUARDRAIL BLOCKED';
 
                 return (
                   <div key={index} className="p-4 bg-error-red/[0.02] border border-error-red/20 rounded-xl">
@@ -60,13 +62,18 @@ export default function PriorityCases({ transactions = [], currency, onNavigate 
                     
                     <div className="flex items-baseline justify-between mb-2">
                       <span className="text-xl font-black text-navy-dark">{formatCurrency(c.amount, currency)}</span>
+                      {statusLabel && (
+                        <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded bg-warning-amber/10 text-warning-amber border border-warning-amber/20 flex items-center gap-1">
+                          <ShieldAlert size={10} /> {statusLabel}
+                        </span>
+                      )}
                     </div>
 
                     <div className="text-xs text-secondary-text space-y-1 mb-4">
                       <div className="flex justify-between border-b border-border-light/40 py-1">
-                        <span>Gate Status:</span>
+                        <span>Customer:</span>
                         <span className="font-bold text-navy-dark">
-                          {c.customerDebited === 'Yes' ? 'Customer debited' : 'Failed'}
+                          {customerName}
                         </span>
                       </div>
                       <div className="flex justify-between py-1">

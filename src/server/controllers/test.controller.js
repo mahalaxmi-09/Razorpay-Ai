@@ -499,6 +499,69 @@ export const testController = {
       });
       caseCount++;
 
+      // Scenario 12: Wrong Number / Recipient Identifier Mismatch (GUARDRAIL BLOCKED)
+      const customerAnanya = await prisma.customer.create({
+        data: { name: 'Ananya Reddy', email: 'ananya.reddy@gmail.com', phone: '+919988112233' }
+      });
+
+      const txnWrong = await prisma.transaction.create({
+        data: {
+          id: 'TXN_WRONG_001',
+          providerPaymentId: 'pay_TEST_WRONG_001',
+          merchantId: merchant.id,
+          customerId: customerAnanya.id,
+          amount: 450000, // ₹4,500
+          currency: 'INR',
+          status: 'FAILED',
+          paymentMethod: 'UPI',
+          captured: false,
+          customerDebited: false,
+          riskStatus: 'HIGH',
+          merchantSettlementStatus: 'UNSETTLED',
+          failureReason: 'Recipient/UPI identifier mismatch',
+          retryCount: 0,
+          createdAt: new Date(Date.now() - 5 * 60 * 1000)
+        }
+      });
+      txnCount++;
+
+      const riskWrong = await prisma.revenueRiskEvent.create({
+        data: {
+          transactionId: txnWrong.id,
+          merchantId: merchant.id,
+          riskType: 'PAYMENT_FAILED',
+          riskLevel: 'High',
+          amountAtRisk: 450000,
+          reason: 'Payment failed due to recipient/UPI identifier mismatch (wrongnumber@upi vs expected merchant@upi).',
+          status: 'OPEN',
+          detectedAt: new Date(Date.now() - 5 * 60 * 1000)
+        }
+      });
+      riskCount++;
+
+      const caseWrong = await prisma.recoveryCase.create({
+        data: {
+          riskEventId: riskWrong.id,
+          transactionId: txnWrong.id,
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_RECIPIENT_BEFORE_RETRY',
+          createdAt: new Date(Date.now() - 5 * 60 * 1000)
+        }
+      });
+      caseCount++;
+
+      await prisma.aIDecision.create({
+        data: {
+          recoveryCaseId: caseWrong.id,
+          rootCause: 'Incorrect recipient/UPI identifier used during payment.',
+          confidence: 0.92,
+          modelUsed: 'gpt-4o',
+          reasoningSummary: 'Do NOT automatically retry the payment to an unknown recipient. 1. Stop automatic retry. 2. Ask for recipient verification/correction. 3. Generate a safe payment retry recommendation. 4. Escalate if the recipient cannot be verified.',
+          merchantMessage: 'Verify recipient before retry. Automatic retry blocked by recipient verification guardrail.'
+        }
+      });
+
       // Populate Notifications
       await prisma.notification.createMany({
         data: [
@@ -524,6 +587,14 @@ export const testController = {
             title: 'Case Escalated to Compliance Queue',
             message: 'TXN_10008 - Critical fraud risk detected. Routed to merchant compliance review.',
             severity: 'error',
+            read: false
+          },
+          {
+            merchantId: merchant.id,
+            type: 'GUARDRAIL_BLOCKED',
+            title: 'Automatic Retry Blocked: Recipient Mismatch',
+            message: 'TXN_WRONG_001 (₹4,500) - Recipient verification required before retry to prevent misrouted funds.',
+            severity: 'warning',
             read: false
           }
         ]
@@ -552,6 +623,34 @@ export const testController = {
             eventType: 'RECOVERY_VERIFIED',
             actor: 'SYSTEM',
             description: 'Recovery verified successfully for payment TXN_10007. Recovered amount: ₹1,12,500.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_WRONG_001',
+            eventType: 'WRONG_RECIPIENT_DETECTED',
+            actor: 'TELEMETRY_INGESTION',
+            description: 'Wrong recipient detected: ₹4,500 UPI payment failed with recipient mismatch (entered: wrongnumber@upi, expected: merchant@upi).'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_WRONG_001',
+            eventType: 'AI_DIAGNOSIS_COMPLETED',
+            actor: 'OPENAI_GPT4O',
+            description: 'AI analysis completed: Diagnosed Payment Routing Error / Recipient Mismatch with 92% confidence.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_WRONG_001',
+            eventType: 'AUTOMATIC_RETRY_BLOCKED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Automatic retry blocked: Recipient Verification Guardrail prevented automated money transfer to wrongnumber@upi.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: 'TXN_WRONG_001',
+            eventType: 'RECIPIENT_VERIFICATION_REQUIRED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Case marked AWAITING_APPROVAL. Customer recipient verification required before safe retry.'
           }
         ]
       });
@@ -570,6 +669,131 @@ export const testController = {
       return res.status(500).json({
         success: false,
         error: { code: 'SEED_ERROR', message: error.message }
+      });
+    }
+  },
+
+  // 3. Dedicated Endpoint to Simulate "Wrong Number Payment" Scenario
+  simulateWrongNumber: async (req, res) => {
+    try {
+      let merchant = await prisma.merchant.findFirst();
+      if (!merchant) {
+        const user = await prisma.user.create({ data: { name: 'Mounika Merchant', email: 'mounika@razorrecover.ai' } });
+        merchant = await prisma.merchant.create({ data: { userId: user.id, name: 'Mounika Enterprises', email: 'mounika@razorrecover.ai' } });
+      }
+
+      let customer = await prisma.customer.findFirst({ where: { name: 'Ananya Reddy' } });
+      if (!customer) {
+        customer = await prisma.customer.create({ data: { name: 'Ananya Reddy', email: 'ananya.reddy@gmail.com', phone: '+919988112233' } });
+      }
+
+      // 1. Create or Reset Transaction TXN_WRONG_001
+      const txn = await prisma.transaction.upsert({
+        where: { id: 'TXN_WRONG_001' },
+        update: {
+          status: 'FAILED',
+          failureReason: 'Recipient/UPI identifier mismatch',
+          riskStatus: 'HIGH'
+        },
+        create: {
+          id: 'TXN_WRONG_001',
+          providerPaymentId: 'pay_TEST_WRONG_001',
+          merchantId: merchant.id,
+          customerId: customer.id,
+          amount: 450000, // ₹4,500
+          currency: 'INR',
+          status: 'FAILED',
+          paymentMethod: 'UPI',
+          captured: false,
+          customerDebited: false,
+          riskStatus: 'HIGH',
+          merchantSettlementStatus: 'UNSETTLED',
+          failureReason: 'Recipient/UPI identifier mismatch',
+          retryCount: 0
+        }
+      });
+
+      // 2. Create Risk Event
+      const risk = await prisma.revenueRiskEvent.create({
+        data: {
+          transactionId: txn.id,
+          merchantId: merchant.id,
+          riskType: 'PAYMENT_FAILED',
+          riskLevel: 'High',
+          amountAtRisk: 450000,
+          reason: 'Payment failed due to recipient/UPI identifier mismatch (wrongnumber@upi vs expected merchant@upi).',
+          status: 'OPEN'
+        }
+      });
+
+      // 3. Create Recovery Case in AWAITING_APPROVAL (Guardrail Blocked)
+      const recoveryCase = await prisma.recoveryCase.upsert({
+        where: { transactionId: txn.id },
+        update: {
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_RECIPIENT_BEFORE_RETRY'
+        },
+        create: {
+          riskEventId: risk.id,
+          transactionId: txn.id,
+          status: 'AWAITING_APPROVAL',
+          priority: 'High',
+          recommendedAction: 'VERIFY_RECIPIENT_BEFORE_RETRY'
+        }
+      });
+
+      // 4. Create Audit Logs
+      await prisma.auditLog.createMany({
+        data: [
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'WRONG_RECIPIENT_DETECTED',
+            actor: 'TELEMETRY_INGESTION',
+            description: 'Wrong recipient detected: ₹4,500 UPI payment failed with recipient mismatch (entered: wrongnumber@upi, expected: merchant@upi).'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'AI_DIAGNOSIS_COMPLETED',
+            actor: 'OPENAI_GPT4O',
+            description: 'AI diagnosis completed: Root cause is Payment Routing Error / Recipient Mismatch (92% confidence).'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'AUTOMATIC_RETRY_BLOCKED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Recipient Verification Guardrail BLOCKED automatic recovery attempt to protect against misrouted funds.'
+          },
+          {
+            merchantId: merchant.id,
+            transactionId: txn.id,
+            eventType: 'RECIPIENT_VERIFICATION_REQUIRED',
+            actor: 'GUARDRAILS_ENGINE',
+            description: 'Case marked AWAITING_APPROVAL. Customer recipient verification required before safe retry.'
+          }
+        ]
+      });
+
+      return res.json({
+        success: true,
+        scenario: 'Wrong Number Payment',
+        transactionId: txn.id,
+        amount: '₹4,500',
+        customer: 'Ananya Reddy',
+        failureReason: 'Recipient/UPI identifier mismatch',
+        aiConfidence: '92%',
+        guardrailStatus: 'GUARDRAIL_BLOCKED',
+        guardrailRule: 'Recipient verification required',
+        recoveryCase
+      });
+    } catch (error) {
+      console.error('testController.simulateWrongNumber error:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: { code: 'SIMULATE_WRONG_NUMBER_ERROR', message: error.message }
       });
     }
   }

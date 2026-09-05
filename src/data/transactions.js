@@ -1,10 +1,30 @@
 /**
  * Central Transactions Dataset - RazorRecover AI
  * 
- * Contains realistic Test Mode transactions representing the 11 Buildathon scenarios.
+ * Contains realistic Test Mode transactions representing the Buildathon scenarios,
+ * including the simulated "Wrong Number Payment" test scenario.
  */
 
 export const transactionsData = [
+  {
+    id: 'TXN_WRONG_001',
+    customerName: 'Ananya Reddy',
+    amount: 4500,
+    currency: 'INR',
+    status: 'Payment Failed',
+    rawStatus: 'FAILED',
+    merchantSettlementStatus: 'UNSETTLED',
+    merchantSettlement: 'Pending',
+    customerDebited: 'No',
+    paymentMethod: 'UPI',
+    enteredRecipient: 'wrongnumber@upi',
+    expectedRecipient: 'merchant@upi',
+    risk: 'High',
+    riskStatus: 'HIGH',
+    date: '5 mins ago',
+    failureReason: 'Recipient/UPI identifier mismatch',
+    riskCategory: 'Payment Routing Error'
+  },
   {
     id: 'TXN_10001',
     customerName: 'Karthik Rao',

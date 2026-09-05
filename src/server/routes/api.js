@@ -23,6 +23,7 @@ router.get('/razorpay/test-connection', healthController.testRazorpayConnection)
 // 2. Development Test Data Seed & Reset
 router.post('/test/seed', testController.seedData);
 router.post('/test/reset', testController.resetData);
+router.post('/test/simulate-wrong-number', testController.simulateWrongNumber);
 
 // 3. Razorpay TEST Mode Payments Ingestion & Sync
 router.get('/payments', paymentController.getPayments);

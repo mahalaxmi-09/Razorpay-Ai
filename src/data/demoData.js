@@ -1,7 +1,8 @@
 /**
  * Centralized Controlled DEMO / TEST Dataset for RazorRecover AI
  * 
- * Contains all exact approved Dashboard demo/testing values.
+ * Contains all exact approved Dashboard demo/testing values,
+ * including the simulated "Wrong Number Payment" test scenario.
  */
 
 export const dashboardDemoData = {
@@ -60,6 +61,17 @@ export const dashboardDemoData = {
 
   priorityCases: [
     {
+      id: "TXN_WRONG_001",
+      customer: "Ananya Reddy",
+      amount: 4500,
+      priority: "HIGH PRIORITY",
+      confidence: 92,
+      issue: "Incorrect UPI recipient / wrong number",
+      action: "Verify recipient before retry",
+      status: "GUARDRAIL BLOCKED",
+      guardrailRule: "Recipient verification required"
+    },
+    {
       amount: 12000,
       priority: "HIGH PRIORITY",
       confidence: 94,
@@ -82,7 +94,7 @@ export const dashboardDemoData = {
 
   aiInsight: {
     severity: "WARNING",
-    message: "6 recovery cases active (₹3,198 at risk). Automated recovery workflows monitoring telemetry."
+    message: "₹4,500 payment attempt detected with an incorrect recipient identifier. Automatic recovery was blocked by recipient verification guardrails."
   },
 
   // Demo chart timeframes

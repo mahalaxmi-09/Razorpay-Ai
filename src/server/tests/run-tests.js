@@ -384,6 +384,38 @@ async function runTests() {
     const summaryAfter = await revenueRiskService.getSummary('test_merchant_1');
     assert(summaryAfter.recoveredRevenue >= summaryBefore.recoveredRevenue + 5000, 'TEST 11: Dashboard Recovered Revenue reflects verified DB calculation (+₹5,000)');
 
+    // TEST 12: Wrong Number / Recipient Identifier Mismatch Guardrail
+    const testTxn12 = await prisma.transaction.create({
+      data: {
+        id: 'TXN_TEST_WRONG_001_' + Date.now(),
+        providerPaymentId: 'pay_WRONG_' + Date.now(),
+        amount: 450000, // ₹4,500
+        currency: 'INR',
+        status: 'FAILED',
+        failureReason: 'Recipient/UPI identifier mismatch',
+        paymentMethod: 'UPI',
+        merchantSettlementStatus: 'UNSETTLED',
+        merchantId: 'test_merchant_1',
+        customerId: 'cust_test_1'
+      }
+    });
+
+    const guardrailCheck12 = await guardrailsService.validateAction({
+      transaction: testTxn12,
+      recoveryCase: { id: 'case_wrong_test', status: 'OPEN', attempts: 0 },
+      actionType: 'RETRY_PAYMENT',
+      aiDecision: {
+        rootCause: 'Incorrect recipient/UPI identifier used during payment.',
+        confidence: 0.92,
+        riskLevel: 'HIGH'
+      },
+      actor: 'AI'
+    });
+
+    assert(guardrailCheck12.allowed === false, 'TEST 12: Recipient mismatch strictly blocks automatic retry');
+    assert(guardrailCheck12.guardrailResult === 'GUARDRAIL_BLOCKED', 'TEST 12: Guardrail result is GUARDRAIL_BLOCKED');
+    assert(guardrailCheck12.requiresRecipientVerification === true, 'TEST 12: Requires explicit recipient verification before retry');
+
     console.log(`\n🏁 Test Report: ${passed} passed, ${failed} failed.`);
 
     if (failed > 0) {

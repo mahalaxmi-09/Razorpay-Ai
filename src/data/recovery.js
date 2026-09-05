@@ -1,10 +1,46 @@
 /**
  * Central Recovery Agent Dataset - RazorRecover AI
  * 
- * Contains realistic Test Mode recovery cases for the 6-stage pipeline.
+ * Contains realistic Test Mode recovery cases for the 6-stage pipeline,
+ * including the simulated "Wrong Number Payment" test scenario.
  */
 
 export const recoveryCasesData = [
+  {
+    id: 'CASE_WRONG_001',
+    transactionId: 'TXN_WRONG_001',
+    status: 'AWAITING_APPROVAL',
+    priority: 'HIGH',
+    attempts: 0,
+    maxAttempts: 3,
+    approvalRequired: true,
+    guardrailBlocked: true,
+    guardrailRule: 'Recipient verification required',
+    recommendedAction: 'VERIFY_RECIPIENT_BEFORE_RETRY',
+    currentAction: null,
+    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    transaction: {
+      id: 'TXN_WRONG_001',
+      providerPaymentId: 'pay_TEST_WRONG_001',
+      amount: 450000,
+      currency: 'INR',
+      status: 'FAILED',
+      merchantSettlementStatus: 'UNSETTLED',
+      customerDebited: false,
+      failureReason: 'Recipient/UPI identifier mismatch',
+      enteredRecipient: 'wrongnumber@upi',
+      expectedRecipient: 'merchant@upi',
+      customer: { name: 'Ananya Reddy', email: 'ananya.reddy@gmail.com' }
+    },
+    aiDecision: {
+      rootCause: 'Incorrect recipient/UPI identifier used during payment.',
+      riskSummary: 'Payment may fail or be routed to an unintended recipient.',
+      confidence: 0.92,
+      modelUsed: 'gpt-4o',
+      reasoningSummary: 'Do NOT automatically retry the payment to an unknown recipient. 1. Stop automatic retry. 2. Ask for recipient verification/correction. 3. Generate a safe payment retry recommendation. 4. Escalate if the recipient cannot be verified.',
+      merchantMessage: 'Verify recipient before retry. Automatic retry blocked by recipient verification guardrail.'
+    }
+  },
   {
     id: 'CASE_10002',
     transactionId: 'TXN_10002',

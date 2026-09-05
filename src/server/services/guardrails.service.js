@@ -166,6 +166,26 @@ export const guardrailsService = {
       };
     }
 
+    // Rule J: Recipient Verification Guardrail (Wrong Number / Recipient Identifier Mismatch)
+    const isRecipientMismatch = 
+      transaction?.failureReason?.toLowerCase().includes('mismatch') || 
+      transaction?.failureReason?.toLowerCase().includes('wrong') || 
+      transaction?.failureReason?.toLowerCase().includes('recipient') ||
+      aiDecision?.rootCause?.toLowerCase().includes('recipient') ||
+      aiDecision?.rootCause?.toLowerCase().includes('wrong') ||
+      actionType === 'RECIPIENT_VERIFICATION_REQUIRED';
+
+    if (isRecipientMismatch && (actor === 'AI' || actor === 'SYSTEM') && (actionType === 'RETRY_PAYMENT' || actionType === 'AUTO_RETRY' || actionType === 'RETRY_ELIGIBLE_PAYMENT')) {
+      return {
+        allowed: false,
+        guardrailResult: 'GUARDRAIL_BLOCKED',
+        reason: 'Recipient verification required: Payment attempted with incorrect/mismatched recipient identifier. Automatic retry blocked to protect against misrouted funds.',
+        requiresApproval: true,
+        requiresRecipientVerification: true,
+        recommendedAlternative: 'VERIFY_RECIPIENT_BEFORE_RETRY'
+      };
+    }
+
     // All safety guardrails passed
     return {
       allowed: true,
