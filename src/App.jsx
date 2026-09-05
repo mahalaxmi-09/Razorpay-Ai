@@ -331,6 +331,7 @@ export default function App() {
         isOpen={isCopilotOpen} 
         setIsOpen={setIsCopilotOpen} 
         lang={lang}
+        onLangChange={handleLangChange}
       />
     </div>
   );

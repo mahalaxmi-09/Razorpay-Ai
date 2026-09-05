@@ -10,6 +10,7 @@ import { recoveryExecutionService } from '../services/recoveryExecution.service.
 import { revenueRiskService } from '../services/revenueRisk.service.js';
 import { openaiService } from '../services/openai.service.js';
 import { aiService, AIDecisionSchema } from '../services/ai.service.js';
+import { copilotController } from '../controllers/copilot.controller.js';
 import { prisma } from '../config/db.js';
 import crypto from 'crypto';
 
@@ -450,6 +451,31 @@ async function runTests() {
     assert(guardrailCheck13.guardrailResult === 'BLOCKED', 'TEST 13: Guardrail result is BLOCKED');
     assert(guardrailCheck13.guardrailRule === 'DUPLICATE_PAYMENT_PREVENTION', 'TEST 13: Guardrail rule is DUPLICATE_PAYMENT_PREVENTION');
     assert(guardrailCheck13.recommendedAlternative === 'VERIFY_SETTLEMENT', 'TEST 13: Recommended alternative is strictly VERIFY_SETTLEMENT');
+
+    // TEST 14: Multilingual Grounded AI Copilot (English, Telugu, Hindi)
+    const mockResEn = {
+      data: null,
+      json(payload) { this.data = payload; return this; },
+      status() { return this; }
+    };
+    await copilotController.askCopilot({ body: { message: 'What is the current revenue at risk?', lang: 'English' } }, mockResEn);
+    assert(mockResEn.data?.success === true && typeof mockResEn.data?.data?.reply === 'string' && mockResEn.data.data.reply.length > 10, 'TEST 14: Copilot answers successfully in English');
+
+    const mockResTe = {
+      data: null,
+      json(payload) { this.data = payload; return this; },
+      status() { return this; }
+    };
+    await copilotController.askCopilot({ body: { message: 'ప్రస్తుతం ప్రమాదంలో ఉన్న రాబడి ఎంత?', lang: 'తెలుగు' } }, mockResTe);
+    assert(mockResTe.data?.success === true && typeof mockResTe.data?.data?.reply === 'string' && mockResTe.data.data.language === 'Telugu', 'TEST 14: Copilot answers successfully in Telugu (తెలుగు)');
+
+    const mockResHi = {
+      data: null,
+      json(payload) { this.data = payload; return this; },
+      status() { return this; }
+    };
+    await copilotController.askCopilot({ body: { message: 'वर्तमान में जोखिम में कितना राजस्व है?', lang: 'हिंदी' } }, mockResHi);
+    assert(mockResHi.data?.success === true && typeof mockResHi.data?.data?.reply === 'string' && mockResHi.data.data.language === 'Hindi', 'TEST 14: Copilot answers successfully in Hindi (हिंदी)');
 
     console.log(`\n🏁 Test Report: ${passed} passed, ${failed} failed.`);
 
